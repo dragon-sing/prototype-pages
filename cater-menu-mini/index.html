@@ -1,0 +1,5031 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cater 小程序 UI 整改原型 · 基于真实截图重写</title>
+    <style>
+      /* ===== Design Tokens ===== */
+      :root {
+        --primary: #d93a3a;
+        --primary-dark: #b82f2f;
+        --primary-light: rgba(217, 58, 58, 0.1);
+        --primary-bg: rgba(217, 58, 58, 0.05);
+
+        --accent: #ff7e2e;
+
+        --text-primary: #333;
+        --text-secondary: #666;
+        --text-tertiary: #999;
+        --text-disabled: #ccc;
+
+        --bg-page: #f5f5f5;
+        --bg-card: #fff;
+        --bg-hover: #f0f0f0;
+
+        --border: #e5e5e5;
+        --divider: #f0f0f0;
+        --overlay: rgba(0, 0, 0, 0.5);
+
+        --danger: #ff504e;
+        --warning: #ffbf00;
+        --success: #52c41a;
+
+        --fs-tiny: 10px;
+        --fs-xs: 12px;
+        --fs-sm: 14px;
+        --fs-base: 16px;
+        --fs-md: 17px;
+        --fs-lg: 20px;
+        --fs-xl: 26px;
+
+        --fw-regular: 400;
+        --fw-medium: 500;
+        --fw-semibold: 600;
+
+        --lh-none: 1;
+        --lh-tight: 1.25;
+        --lh-normal: 1.5;
+
+        --sp-1: 4px;
+        --sp-2: 8px;
+        --sp-3: 12px;
+        --sp-4: 16px;
+        --sp-5: 20px;
+        --sp-6: 24px;
+        --sp-8: 32px;
+
+        --r-sm: 8px;
+        --r-md: 12px;
+        --r-lg: 16px;
+        --r-full: 999px;
+
+        --shadow-card: 0 1px 4px rgba(0, 0, 0, 0.04);
+        --shadow-float: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.12);
+        --shadow-bottom: 0 -2px 12px rgba(0, 0, 0, 0.06);
+
+        --d-fast: 150ms;
+        --d-normal: 250ms;
+        --d-slow: 350ms;
+        --e-default: cubic-bezier(0.4, 0, 0.2, 1);
+        --e-enter: cubic-bezier(0, 0, 0.2, 1);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
+          'Microsoft YaHei', sans-serif;
+        font-size: var(--fs-base);
+        color: var(--text-primary);
+        line-height: var(--lh-normal);
+        background: linear-gradient(180deg, #ecf0f3 0%, #dfe4e9 100%);
+        overflow: hidden;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+        background: none;
+        border: none;
+        cursor: pointer;
+      }
+      input {
+        font: inherit;
+        color: inherit;
+      }
+
+      /* ===== Shell ===== */
+      .app {
+        display: grid;
+        grid-template-columns: 1fr 440px;
+        grid-template-rows: 56px 1fr;
+        height: 100vh;
+      }
+      @media (max-width: 1100px) {
+        .app {
+          grid-template-columns: 1fr;
+        }
+        .panel {
+          display: none;
+        }
+      }
+      .toolbar {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        padding: 0 24px;
+        background: #fff;
+        border-bottom: 1px solid var(--divider);
+        gap: var(--sp-4);
+        box-shadow: var(--shadow-card);
+        z-index: 10;
+      }
+      .toolbar .brand {
+        font-weight: var(--fw-semibold);
+        font-size: var(--fs-md);
+      }
+      .toolbar .brand em {
+        color: var(--primary);
+        font-style: normal;
+      }
+      .toolbar .vd {
+        width: 1px;
+        height: 20px;
+        background: var(--border);
+      }
+      .toolbar .tabs {
+        display: flex;
+        gap: var(--sp-1);
+        background: var(--bg-page);
+        padding: 4px;
+        border-radius: var(--r-full);
+      }
+      .toolbar .tabs button {
+        padding: 6px 16px;
+        font-size: var(--fs-sm);
+        color: var(--text-secondary);
+        border-radius: var(--r-full);
+      }
+      .toolbar .tabs button.active {
+        background: #fff;
+        color: var(--text-primary);
+        font-weight: var(--fw-semibold);
+        box-shadow: var(--shadow-card);
+      }
+      .toolbar .theme {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+      }
+      .toolbar .theme-label {
+        font-size: var(--fs-xs);
+        color: var(--text-tertiary);
+      }
+      .swatch {
+        width: 20px;
+        height: 20px;
+        border-radius: var(--r-full);
+        cursor: pointer;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 1px var(--border);
+      }
+      .swatch:hover {
+        transform: scale(1.15);
+      }
+      .swatch.on {
+        box-shadow: 0 0 0 2px var(--text-primary);
+      }
+
+      .stage {
+        display: flex;
+        align-items: safe center;
+        justify-content: center;
+        overflow: auto;
+        padding: 32px;
+      }
+      .device {
+        position: relative;
+        width: 375px;
+        height: 812px;
+        background: #fff;
+        border-radius: 44px;
+        box-shadow:
+          0 0 0 10px #1a1a1a,
+          0 0 0 11px #2b2b2b,
+          0 30px 60px rgba(0, 0, 0, 0.25);
+        overflow: hidden;
+      }
+      .device::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 130px;
+        height: 28px;
+        background: #1a1a1a;
+        border-radius: 0 0 18px 18px;
+        z-index: 50;
+      }
+      .screen {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        position: relative;
+        background: #fff;
+      }
+      .status-bar {
+        height: 44px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        padding: 0 var(--sp-6) 6px;
+        font-size: var(--fs-sm);
+        font-weight: var(--fw-semibold);
+      }
+      .status-bar.light {
+        color: #fff;
+      }
+      .status-bar .icons {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .page {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        visibility: hidden;
+        opacity: 0;
+        pointer-events: none;
+        transition:
+          opacity var(--d-normal) var(--e-default),
+          visibility 0s linear var(--d-normal);
+      }
+      .page.active {
+        visibility: visible;
+        opacity: 1;
+        pointer-events: auto;
+        z-index: 1;
+        transition: opacity var(--d-normal) var(--e-default);
+      }
+
+      /* 小程序 5-tab 底部栏 */
+      .tab-bar {
+        height: 58px;
+        padding-bottom: 22px;
+        background: #fff;
+        display: flex;
+        border-top: 1px solid var(--divider);
+        flex-shrink: 0;
+      }
+      .tab-bar-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        color: var(--text-tertiary);
+        font-size: var(--fs-tiny);
+      }
+      .tab-bar-item:active {
+        transform: scale(0.92);
+      }
+      .tab-bar-item.on {
+        color: var(--primary);
+      }
+      .tab-bar-item .tbi {
+        width: 22px;
+        height: 22px;
+      }
+
+      /* =========================================================
+     点单页 — 忠实复刻现状 + 卡片化叠加
+     ========================================================= */
+      /* 顶部条（首行）= 搜索 + 一起拼 + 胶囊 内联（贴合老小程序"搜索行 + 胶囊"结构） */
+      .m-nav {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+        padding: 6px var(--sp-4);
+        min-height: 40px;
+      }
+      /* 搜索行：导航栏下方的普通内容行（§1.1 控件统一 32px 胶囊 + 字号 13px） */
+      /* 搜索 / 一起拼 现在内联在 .m-nav 顶部条里 */
+      .m-nav .pin {
+        flex-shrink: 0;
+        height: 32px;
+        padding: 0 12px;
+        border-radius: var(--r-full);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 13px;
+        color: var(--text-primary);
+        background: #fff;
+      }
+      .m-nav .pin svg {
+        width: 14px;
+        height: 14px;
+      }
+      .m-nav .search {
+        flex: 1;
+        min-width: 0;
+        height: 32px;
+        padding: 0 var(--sp-3);
+        border-radius: var(--r-full);
+        background: var(--bg-page);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--text-tertiary);
+        font-size: 13px;
+      }
+      .m-nav .mini-cap {
+        width: 88px;
+        height: 32px;
+        border-radius: var(--r-full);
+        background: rgba(0, 0, 0, 0.04);
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        color: var(--text-secondary);
+      }
+      .m-nav .mini-cap svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .shop-info {
+        flex-shrink: 0;
+        padding: var(--sp-2) var(--sp-4) var(--sp-3);
+        background: #fff;
+      }
+      .shop-info .name {
+        flex: 1;
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        min-width: 0;
+      }
+      .shop-info .name .nm-text {
+        flex: 0 1 auto;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .shop-info .name .down {
+        color: var(--text-tertiary);
+      }
+      .shop-info .dist {
+        margin-top: 2px;
+        font-size: var(--fs-xs);
+        color: var(--text-tertiary);
+        display: flex;
+        align-items: center;
+        gap: 3px;
+      }
+
+      .menu-main {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        background: #fff;
+      }
+
+      /* 左侧分类：纯文字列表，选中加粗（忠实现状） */
+      .sidebar {
+        width: 88px;
+        background: #fff;
+        overflow-y: auto;
+        flex-shrink: 0;
+        min-height: 0;
+        border-right: 1px solid var(--divider);
+        padding: var(--sp-2) 0 var(--sp-5);
+      }
+      .sidebar::-webkit-scrollbar {
+        width: 0;
+      }
+      .cat {
+        position: relative;
+        min-height: 42px;
+        padding: 8px 10px;
+        font-size: var(--fs-sm);
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        line-height: 1.2;
+        transition: all var(--d-fast) var(--e-default);
+      }
+      /* 【整改 §2.1】分类静态角标统一尺寸：高 14 / padding 0 4 / 字号 10 / 胶囊
+         位置统一在左上角，与 §2.4 加购数量角标（右上角）避让共存 */
+      .cat .ntag {
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        padding: 0 4px;
+        height: 14px;
+        line-height: 14px;
+        font-size: var(--fs-tiny);
+        color: #fff;
+        background: var(--primary);
+        border-radius: var(--r-full);
+        font-weight: var(--fw-medium);
+        z-index: 1;
+      }
+      .cat .ntag.hot {
+        background: var(--accent);
+      }
+      /* 【整改 §2.4】分类右上角已加购数量角标：圆形 14×14 --primary */
+      .cat .cart-cnt {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        min-width: 14px;
+        height: 14px;
+        padding: 0 3px;
+        font-size: var(--fs-tiny);
+        line-height: 14px;
+        text-align: center;
+        color: #fff;
+        background: var(--primary);
+        border-radius: var(--r-full);
+        font-weight: var(--fw-semibold);
+        box-shadow: 0 0 0 1.5px #fff;
+        z-index: 2;
+      }
+      .cat:active {
+        background: var(--bg-hover);
+      }
+      /* 【整改 §2.5】分类选中态：加粗 + 浅色背景块（跟主题）+ 3px 左竖条 */
+      .cat.on {
+        background: var(--primary-bg);
+        color: var(--primary);
+        font-weight: var(--fw-semibold);
+      }
+      .cat.on::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 12px;
+        bottom: 12px;
+        width: 3px;
+        background: var(--primary);
+        border-radius: 0 2px 2px 0;
+      }
+
+      /* 右侧商品区 */
+      .products {
+        flex: 1;
+        min-width: 0;
+        min-height: 0;
+        position: relative;
+        overflow-y: auto;
+        background: var(--bg-page);
+      }
+      .products::-webkit-scrollbar {
+        width: 0;
+      }
+
+      /* 顶部 3 列热销横滑小卡片 — 忠实现状 */
+      .hot-row {
+        padding: var(--sp-3) var(--sp-3) var(--sp-2);
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+      .hot-card {
+        background: #fff;
+        border-radius: var(--r-sm);
+        overflow: hidden;
+        position: relative;
+        padding-bottom: 8px;
+        box-shadow: var(--shadow-card);
+      }
+      .hot-card .im {
+        position: relative;
+        aspect-ratio: 1;
+        overflow: hidden;
+      }
+      .hot-card .im.g-green {
+        background: linear-gradient(135deg, #aec687 0%, #86a35d 100%);
+      }
+      .hot-card .im.g-pink {
+        background: linear-gradient(135deg, #f8a5b1 0%, #e67892 100%);
+      }
+      .hot-card .im.g-red {
+        background: linear-gradient(135deg, #ff7b5a 0%, #d93a3a 100%);
+      }
+      .hot-card .im .em {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+      }
+      .hot-card .tag {
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        padding: 1px 5px;
+        font-size: 9px;
+        color: #fff;
+        background: var(--primary);
+        border-radius: 3px;
+        font-weight: var(--fw-medium);
+      }
+      .hot-card .tag.off {
+        background: linear-gradient(90deg, #ff7e2e, #ff4e50);
+      }
+      .hot-card .nm {
+        font-size: var(--fs-xs);
+        padding: 6px 8px 0;
+        color: var(--text-primary);
+        line-height: 1.3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .hot-card .bot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 2px 8px 0;
+      }
+      .hot-card .pr {
+        font-size: var(--fs-sm);
+        font-weight: var(--fw-semibold);
+        color: var(--primary);
+      }
+      .hot-card .pr .sym {
+        font-size: var(--fs-tiny);
+      }
+      .hot-card .add-rd {
+        width: 20px;
+        height: 20px;
+        border-radius: var(--r-full);
+        background: var(--primary);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* 活动 Banner — 忠实现状 */
+      .act-banner {
+        margin: var(--sp-2) var(--sp-3) 0;
+        height: 68px;
+        border-radius: var(--r-sm);
+        background: linear-gradient(
+          100deg,
+          #a8c080 0%,
+          #8ea868 50%,
+          #708a4e 100%
+        );
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        padding: 0 var(--sp-4);
+        color: #fff;
+        box-shadow: var(--shadow-card);
+      }
+      .act-banner .txt {
+        flex: 1;
+      }
+      .act-banner .txt .l1 {
+        font-size: var(--fs-base);
+        font-weight: var(--fw-semibold);
+      }
+      .act-banner .txt .l2 {
+        font-size: var(--fs-xs);
+        opacity: 0.9;
+        margin-top: 2px;
+      }
+      .act-banner .em {
+        font-size: 38px;
+        margin-right: -6px;
+      }
+
+      /* 分类标题 - 【整改增量】吸顶 + 数量 */
+      .sec-title {
+        position: sticky;
+        top: 0;
+        padding: var(--sp-4) var(--sp-3) var(--sp-2);
+        background: var(--bg-page);
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        font-size: var(--fs-sm);
+        font-weight: var(--fw-semibold);
+        z-index: 5;
+      }
+      .sec-title::before {
+        content: '';
+        display: block;
+        width: 3px;
+        height: 12px;
+        background: var(--primary);
+        border-radius: 2px;
+        transform: translateY(1px);
+      }
+      .sec-title .cnt {
+        font-size: var(--fs-tiny);
+        color: var(--text-tertiary);
+        font-weight: var(--fw-regular);
+      }
+
+      /* 主商品卡：图左文右 — 忠实现状 */
+      .pd {
+        margin: 0 var(--sp-3) var(--sp-2);
+        padding: var(--sp-3);
+        background: #fff;
+        /* 【整改增量】卡片化：圆角+微阴影 */
+        border-radius: var(--r-md);
+        box-shadow: var(--shadow-card);
+        display: flex;
+        gap: var(--sp-3);
+      }
+      .pd:active {
+        transform: scale(0.99);
+      }
+      .pd .im {
+        position: relative;
+        width: 96px;
+        height: 96px;
+        border-radius: var(--r-sm);
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+      .pd .im.g-red {
+        background: linear-gradient(135deg, #ff7b5a, #d93a3a);
+      }
+      .pd .im.g-amber {
+        background: linear-gradient(135deg, #ffb347, #d97f21);
+      }
+      .pd .im.g-cream {
+        background: linear-gradient(135deg, #ffe6b3, #f0c27b);
+      }
+      .pd .im.g-forest {
+        background: linear-gradient(135deg, #a8c080, #708a4e);
+      }
+      .pd .im.g-plum {
+        background: linear-gradient(135deg, #c4a2cc, #7a5c82);
+      }
+      .pd .im .em {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 42px;
+      }
+      .pd .im .badge {
+        position: absolute;
+        top: 6px;
+        left: 6px;
+        padding: 1px 5px;
+        font-size: 9px;
+        color: #fff;
+        background: var(--primary);
+        border-radius: 3px;
+        font-weight: var(--fw-medium);
+      }
+
+      .pd .info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .pd .ttl {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+        font-size: var(--fs-sm);
+        font-weight: var(--fw-semibold);
+        line-height: var(--lh-tight);
+      }
+      .pd .ttl .nm {
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .pd .ttl .new-tag {
+        flex-shrink: 0;
+        padding: 1px 5px;
+        font-size: 9px;
+        color: #fff;
+        background: var(--primary);
+        border-radius: 3px;
+        font-weight: var(--fw-regular);
+      }
+      .pd .ttl .coupon-tag {
+        flex-shrink: 0;
+        padding: 1px 5px;
+        font-size: 9px;
+        color: var(--primary);
+        background: var(--primary-light);
+        border-radius: 3px;
+        font-weight: var(--fw-regular);
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
+      .pd .ds {
+        margin-top: 3px;
+        font-size: var(--fs-xs);
+        color: var(--text-tertiary);
+        line-height: var(--lh-normal);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .pd .tags {
+        margin-top: 4px;
+        display: flex;
+        gap: 4px;
+      }
+      .pd .tg {
+        padding: 1px 5px;
+        font-size: var(--fs-tiny);
+        color: var(--text-tertiary);
+        background: var(--bg-page);
+        border-radius: 3px;
+      }
+      .pd .row {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+      }
+      .pd .pr {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+      }
+      .pd .pr .cur {
+        color: var(--primary);
+        font-weight: var(--fw-semibold);
+      }
+      .pd .pr .cur .sym {
+        font-size: var(--fs-xs);
+      }
+      .pd .pr .cur .num {
+        font-size: var(--fs-lg);
+        line-height: 1;
+      }
+      .pd .pr .orig {
+        font-size: var(--fs-xs);
+        color: var(--text-tertiary);
+        text-decoration: line-through;
+      }
+      /* 【整改 §3.1】无优惠场景：现价用 #333（仅有优惠价才用品牌色突出） */
+      .pd .pr.plain .cur {
+        color: var(--text-primary);
+      }
+      /* 加购按钮 — 忠实现状：黑色圆（非品牌色） */
+      .pd .add {
+        width: 26px;
+        height: 26px;
+        border-radius: var(--r-full);
+        background: #1a1a1a;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform var(--d-fast) var(--e-default);
+      }
+      .pd .add:active {
+        transform: scale(0.88);
+      }
+      .pd .stp {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+      }
+      .pd .stp button {
+        width: 24px;
+        height: 24px;
+        border-radius: var(--r-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .pd .stp .mi {
+        background: #fff;
+        color: var(--text-secondary);
+        border: 1px solid var(--border);
+      }
+      .pd .stp .pl {
+        background: #1a1a1a;
+        color: #fff;
+      }
+      .pd .stp .q {
+        min-width: 16px;
+        text-align: center;
+        font-size: var(--fs-sm);
+        font-weight: var(--fw-semibold);
+      }
+
+      .end-hint {
+        text-align: center;
+        padding: var(--sp-4) 0 var(--sp-6);
+        color: var(--text-disabled);
+        font-size: var(--fs-xs);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--sp-2);
+      }
+      .end-hint::before,
+      .end-hint::after {
+        content: '';
+        width: 24px;
+        height: 1px;
+        background: var(--border);
+      }
+
+      /* 吸底购物车 — 忠实现状：左红色购物袋图标 + 金额 + 右结算红按钮 */
+      .cart {
+        flex-shrink: 0;
+        background: #fff;
+        border-top: 1px solid var(--divider);
+        /* 【整改增量】加顶部阴影分层 */
+        box-shadow: var(--shadow-bottom);
+      }
+      .cart-row {
+        height: 58px;
+        display: flex;
+        align-items: center;
+        gap: var(--sp-3);
+        padding: 0 var(--sp-3) 0 var(--sp-4);
+      }
+      .cart-bag {
+        position: relative;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: transform var(--d-fast) var(--e-default);
+      }
+      .cart-bag:active {
+        transform: scale(0.9);
+      }
+      .cart-bag .bag-ic {
+        width: 44px;
+        height: 44px;
+        color: var(--primary);
+      }
+      /* 【整改 §5.1】加购数量角标：黑色 → 品牌色（拍板：目标态跟 PRD） */
+      .cart-bag .bd {
+        position: absolute;
+        top: 4px;
+        right: 2px;
+        min-width: 16px;
+        height: 16px;
+        padding: 0 4px;
+        font-size: 11px;
+        font-weight: var(--fw-semibold);
+        background: var(--primary);
+        color: #fff;
+        border-radius: var(--r-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 0 2px #fff;
+      }
+      .cart-mid {
+        flex: 1;
+        min-width: 0;
+      }
+      .cart-mid .pr {
+        display: flex;
+        align-items: baseline;
+        gap: 2px;
+      }
+      .cart-mid .pr .sym {
+        font-size: var(--fs-xs);
+        color: var(--primary);
+      }
+      .cart-mid .pr .num {
+        font-size: var(--fs-lg);
+        font-weight: var(--fw-semibold);
+        color: var(--primary);
+      }
+      /* 【整改增量】新增已优惠副信息 */
+      .cart-mid .saved {
+        font-size: var(--fs-tiny);
+        color: var(--primary);
+        margin-top: 1px;
+      }
+      .cart-cta {
+        height: 38px;
+        padding: 0 var(--sp-5);
+        background: var(--primary);
+        color: #fff;
+        font-weight: var(--fw-semibold);
+        font-size: var(--fs-sm);
+        border-radius: var(--r-full);
+        display: flex;
+        align-items: center;
+      }
+      .cart-cta:active {
+        background: var(--primary-dark);
+      }
+
+      /* 购物车半屏弹层（交互示意） */
+      .sheet-wrap {
+        position: absolute;
+        inset: 0;
+        z-index: 30;
+        visibility: hidden;
+        opacity: 0;
+        transition:
+          opacity var(--d-slow) var(--e-default),
+          visibility 0s linear var(--d-slow);
+      }
+      .sheet-wrap.show {
+        visibility: visible;
+        opacity: 1;
+        transition: opacity var(--d-slow) var(--e-default);
+      }
+      .sheet-wrap .mask {
+        position: absolute;
+        inset: 0;
+        background: var(--overlay);
+      }
+      .sheet-wrap .sheet {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        max-height: 65%;
+        background: #fff;
+        border-radius: var(--r-lg) var(--r-lg) 0 0;
+        transform: translateY(100%);
+        transition: transform var(--d-slow) var(--e-enter);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .sheet-wrap.show .sheet {
+        transform: translateY(0);
+      }
+      .sheet-hd {
+        padding: var(--sp-4) var(--sp-4) var(--sp-3);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--divider);
+      }
+      .sheet-hd .t {
+        font-size: var(--fs-base);
+        font-weight: var(--fw-semibold);
+      }
+      .sheet-hd .clr {
+        color: var(--text-tertiary);
+        font-size: var(--fs-xs);
+        display: flex;
+        align-items: center;
+        gap: 3px;
+      }
+      .sheet-bd {
+        flex: 1;
+        overflow-y: auto;
+      }
+      .sheet-bd::-webkit-scrollbar {
+        width: 0;
+      }
+      .ci {
+        padding: var(--sp-3) var(--sp-4);
+        display: flex;
+        align-items: center;
+        gap: var(--sp-3);
+      }
+      .ci .ck {
+        width: 20px;
+        height: 20px;
+        border-radius: var(--r-full);
+        border: 1.5px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .ci .ck.on {
+        border-color: var(--primary);
+        background: var(--primary);
+      }
+      .ci .im {
+        width: 52px;
+        height: 52px;
+        border-radius: var(--r-sm);
+        flex-shrink: 0;
+        position: relative;
+      }
+      .ci .im .em {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+      }
+      .ci .im.g-red {
+        background: linear-gradient(135deg, #ff7b5a, #d93a3a);
+      }
+      .ci .im.g-amber {
+        background: linear-gradient(135deg, #ffb347, #d97f21);
+      }
+      .ci .info {
+        flex: 1;
+        min-width: 0;
+      }
+      .ci .info .n {
+        font-size: var(--fs-sm);
+        font-weight: var(--fw-medium);
+      }
+      .ci .info .s {
+        font-size: var(--fs-xs);
+        color: var(--text-tertiary);
+        margin-top: 2px;
+      }
+      .ci .info .p {
+        margin-top: 4px;
+      }
+      .ci .info .p .cur {
+        color: var(--primary);
+        font-weight: var(--fw-semibold);
+      }
+      .ci .info .p .orig {
+        font-size: var(--fs-tiny);
+        color: var(--text-disabled);
+        text-decoration: line-through;
+        margin-left: 6px;
+      }
+      .ci .stp {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+      }
+      .ci .stp button {
+        width: 22px;
+        height: 22px;
+        border-radius: var(--r-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .ci .stp .mi {
+        background: #fff;
+        color: var(--text-secondary);
+        border: 1px solid var(--border);
+      }
+      .ci .stp .pl {
+        background: #1a1a1a;
+        color: #fff;
+      }
+      .ci .stp .q {
+        min-width: 14px;
+        text-align: center;
+        font-size: var(--fs-sm);
+        font-weight: var(--fw-semibold);
+      }
+
+      /* =========================================================
+     结算页 — 忠实复刻现状红头 + 整改叠加
+     ========================================================= */
+      .co-hero {
+        flex-shrink: 0;
+        background: var(--primary);
+        padding-bottom: var(--sp-5);
+        color: #fff;
+        position: relative;
+      }
+      .co-hero .top-act {
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 var(--sp-4);
+      }
+      .co-hero .top-act .back {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .co-hero .top-act .mini-cap {
+        width: 88px;
+        height: 32px;
+        border-radius: var(--r-full);
+        background: rgba(255, 255, 255, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+      }
+      .co-hero .top-act .mini-cap svg {
+        width: 16px;
+        height: 16px;
+      }
+      .co-hero .info {
+        padding: var(--sp-3) var(--sp-4) 0;
+      }
+      .co-hero .info .name-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .co-hero .info .name-row .nm {
+        font-size: var(--fs-lg);
+        font-weight: var(--fw-semibold);
+      }
+      .co-hero .info .name-row .dist {
+        font-size: var(--fs-xs);
+        opacity: 0.92;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+      }
+      .co-hero .info .addr {
+        margin-top: 4px;
+        font-size: var(--fs-xs);
+        opacity: 0.85;
+        line-height: 1.4;
+      }
+      /* 【整改增量】红头底部加"切换门店"入口 — 现状不支持切换 */
+      .co-hero .switch {
+        margin-top: var(--sp-3);
+        height: 32px;
+        padding: 0 var(--sp-3);
+        background: rgba(255, 255, 255, 0.22);
+        border-radius: var(--r-full);
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: var(--fs-xs);
+      }
+
+      .co-body {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        background: var(--bg-page);
+        padding: 0 var(--sp-3) var(--sp-4);
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-3);
+      }
+      .co-body::-webkit-scrollbar {
+        width: 0;
+      }
+      .co-body > :first-child {
+        margin-top: calc(-1 * var(--sp-4));
+      }
+
+      .card {
+        flex-shrink: 0;
+        background: #fff;
+        border-radius: var(--r-md);
+        box-shadow: var(--shadow-card);
+        overflow: hidden;
+      }
+
+      /* 堂食/自取 大 Tab 卡片 — 忠实现状 */
+      .pickup-card {
+        padding: var(--sp-4);
+      }
+      .pickup-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--sp-3);
+      }
+      .pickup-tab {
+        position: relative;
+        height: 84px;
+        border-radius: var(--r-md);
+        border: 2px solid var(--border);
+        background: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        color: var(--text-primary);
+        overflow: hidden;
+        transition: all var(--d-fast) var(--e-default);
+      }
+      .pickup-tab .t {
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+      }
+      .pickup-tab .s {
+        font-size: var(--fs-xs);
+        color: var(--text-tertiary);
+      }
+      .pickup-tab.on {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+      .pickup-tab.on .s {
+        color: var(--primary);
+        opacity: 0.75;
+      }
+      .pickup-tab.on::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 22px;
+        height: 22px;
+        background: var(--primary);
+        clip-path: polygon(100% 0, 0 0, 100% 100%);
+      }
+      .pickup-tab.on::before {
+        content: '';
+        position: absolute;
+        top: 3px;
+        right: 2px;
+        width: 8px;
+        height: 5px;
+        border-left: 1.5px solid #fff;
+        border-bottom: 1.5px solid #fff;
+        transform: rotate(-45deg);
+        z-index: 1;
+      }
+      .pickup-time {
+        margin-top: var(--sp-4);
+        padding-top: var(--sp-4);
+        border-top: 1px solid var(--divider);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .pickup-time .l {
+        font-size: var(--fs-sm);
+        color: var(--text-primary);
+      }
+      .pickup-time .r {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: var(--fs-sm);
+        color: var(--text-primary);
+        font-weight: var(--fw-medium);
+      }
+      /* 【整改增量】数字突出 */
+      .pickup-time .r .eta-num {
+        color: var(--primary);
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+      }
+      .pickup-time .r .ar {
+        color: var(--text-disabled);
+      }
+
+      /* 商品清单卡 - 忠实现状（无步进器，只展示）+ 【整改】3 件后折叠提示 */
+      .order-list {
+        padding: var(--sp-3) var(--sp-4);
+      }
+      .oi {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-3);
+        padding: var(--sp-2) 0;
+      }
+      .oi .im {
+        width: 56px;
+        height: 56px;
+        border-radius: var(--r-sm);
+        flex-shrink: 0;
+        position: relative;
+        overflow: hidden;
+      }
+      .oi .im.g-red {
+        background: linear-gradient(135deg, #ff7b5a, #d93a3a);
+      }
+      .oi .im.g-amber {
+        background: linear-gradient(135deg, #ffb347, #d97f21);
+      }
+      .oi .im.g-forest {
+        background: linear-gradient(135deg, #a8c080, #708a4e);
+      }
+      .oi .im .em {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+      }
+      .oi .info {
+        flex: 1;
+        min-width: 0;
+      }
+      .oi .info .n {
+        font-size: var(--fs-sm);
+        font-weight: var(--fw-semibold);
+        line-height: var(--lh-tight);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+      .oi .info .s {
+        font-size: var(--fs-xs);
+        color: var(--text-tertiary);
+        margin-top: 2px;
+      }
+      .oi .info .qty {
+        font-size: var(--fs-xs);
+        color: var(--text-secondary);
+        margin-top: 3px;
+      }
+      .oi .pr {
+        font-size: var(--fs-base);
+        font-weight: var(--fw-semibold);
+        color: var(--text-primary);
+      }
+      .oi .pr .sym {
+        font-size: var(--fs-xs);
+      }
+
+      /* 【整改增量】展开/折叠胶囊 */
+      .fold-wrap {
+        display: flex;
+        justify-content: center;
+        padding: var(--sp-2) 0 0;
+      }
+      .fold-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 5px 14px;
+        font-size: var(--fs-xs);
+        color: var(--text-tertiary);
+        background: #fff;
+        border: 1px solid var(--divider);
+        border-radius: var(--r-full);
+      }
+
+      /* 金额明细行（卡片内） - 忠实现状 */
+      .amt-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--sp-3) var(--sp-4);
+        border-top: 1px solid var(--divider);
+        font-size: var(--fs-sm);
+      }
+      .amt-row .lb {
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .amt-row .lb .icon-cp {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        background: var(--primary);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        font-weight: 700;
+      }
+      .amt-row .vl {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        color: var(--text-primary);
+      }
+      .amt-row .vl .save {
+        color: var(--primary);
+        font-weight: var(--fw-semibold);
+      }
+      .amt-row .vl .ph {
+        color: var(--text-tertiary);
+        font-size: var(--fs-xs);
+      }
+      .amt-row .vl .ar {
+        color: var(--text-disabled);
+      }
+
+      /* 小计行（忠实现状：右下对齐"共优惠 共N件 合计"） */
+      .sum-row {
+        padding: var(--sp-3) var(--sp-4);
+        border-top: 1px solid var(--divider);
+        display: flex;
+        justify-content: flex-end;
+        align-items: baseline;
+        gap: var(--sp-3);
+        font-size: var(--fs-xs);
+        white-space: nowrap;
+      }
+      .sum-row .sv {
+        color: var(--primary);
+      }
+      .sum-row .right {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+      }
+      .sum-row .cnt {
+        color: var(--text-tertiary);
+      }
+      .sum-row .total {
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        color: var(--text-primary);
+      }
+
+      /* 超值换购卡片（带红三角角标，忠实现状） */
+      .swap-card {
+        position: relative;
+        padding: var(--sp-3) var(--sp-4);
+      }
+      .swap-card .corner {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 68px;
+        height: 68px;
+        overflow: hidden;
+      }
+      .swap-card .corner .bg {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 0;
+        height: 0;
+        border-top: 68px solid var(--primary);
+        border-left: 68px solid transparent;
+      }
+      .swap-card .corner .txt {
+        position: absolute;
+        top: 14px;
+        right: -2px;
+        color: #fff;
+        font-size: var(--fs-tiny);
+        font-weight: var(--fw-semibold);
+        transform: rotate(45deg);
+        white-space: nowrap;
+      }
+      .swap-card .ttl {
+        padding-right: 68px;
+        font-size: var(--fs-sm);
+        color: var(--text-primary);
+        font-weight: var(--fw-medium);
+        line-height: 1.4;
+      }
+      .swap-card .sub {
+        padding-right: 68px;
+        font-size: var(--fs-xs);
+        color: var(--text-tertiary);
+        margin-top: 3px;
+      }
+      /* 【整改增量】换购品横滑缩略 + 展开胶囊（视觉降权） */
+      .swap-card .scroll {
+        margin-top: var(--sp-3);
+        display: flex;
+        gap: var(--sp-2);
+        overflow-x: auto;
+      }
+      .swap-card .scroll::-webkit-scrollbar {
+        height: 0;
+      }
+      .swap-card .sw-it {
+        flex-shrink: 0;
+        width: 70px;
+        text-align: center;
+      }
+      .swap-card .sw-it .im {
+        width: 70px;
+        height: 70px;
+        border-radius: var(--r-sm);
+        position: relative;
+      }
+      .swap-card .sw-it .im.g-pink {
+        background: linear-gradient(135deg, #ffb3c1, #ff8aa3);
+      }
+      .swap-card .sw-it .im.g-mint {
+        background: linear-gradient(135deg, #b3e5cd, #6cd09a);
+      }
+      .swap-card .sw-it .im.g-peach {
+        background: linear-gradient(135deg, #ffd3b6, #ffa987);
+      }
+      .swap-card .sw-it .im.g-cream {
+        background: linear-gradient(135deg, #ffe6b3, #f0c27b);
+      }
+      .swap-card .sw-it .im .em {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 34px;
+      }
+      .swap-card .sw-it .n {
+        margin-top: 4px;
+        font-size: var(--fs-tiny);
+        color: var(--text-secondary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .swap-card .sw-it .pr {
+        font-size: var(--fs-xs);
+        color: var(--primary);
+        font-weight: var(--fw-semibold);
+      }
+
+      /* 支付方式 - 【整改增量】从"全展开占半屏"改为"单行已选 + 可展开" */
+      .pay-collapsed {
+        padding: var(--sp-3) var(--sp-4);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .pay-collapsed .l {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+        font-size: var(--fs-sm);
+      }
+      .pay-collapsed .l .ic {
+        width: 22px;
+        height: 22px;
+        border-radius: 5px;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--fs-tiny);
+        font-weight: 700;
+      }
+      .pay-collapsed .l .ic.wx {
+        background: #09bb07;
+      }
+      .pay-collapsed .sel-name {
+        font-weight: var(--fw-medium);
+      }
+      .pay-collapsed .ar {
+        color: var(--text-disabled);
+      }
+
+      /* 底部栏 — 忠实现状：金额左 + 共优惠 + 去支付 */
+      .ft-bar {
+        flex-shrink: 0;
+        padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + 22px);
+        background: #fff;
+        border-top: 1px solid var(--divider);
+        /* 【整改增量】顶部阴影分割 */
+        box-shadow: var(--shadow-bottom);
+        display: flex;
+        align-items: center;
+        gap: var(--sp-3);
+      }
+      .ft-bar .tot {
+        flex: 1;
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+      }
+      .ft-bar .tot .lb {
+        font-size: var(--fs-xs);
+        color: var(--text-secondary);
+      }
+      .ft-bar .tot .pr {
+        display: flex;
+        align-items: baseline;
+      }
+      .ft-bar .tot .pr .sym {
+        font-size: var(--fs-sm);
+        color: var(--primary);
+      }
+      .ft-bar .tot .pr .num {
+        font-size: var(--fs-xl);
+        font-weight: var(--fw-semibold);
+        color: var(--primary);
+      }
+      .ft-bar .tot .saved {
+        font-size: var(--fs-tiny);
+        color: var(--primary);
+      }
+      .ft-bar .pay-btn {
+        height: 44px;
+        padding: 0 var(--sp-6);
+        background: var(--primary);
+        color: #fff;
+        font-weight: var(--fw-semibold);
+        font-size: var(--fs-base);
+        border-radius: var(--r-full);
+        box-shadow: 0 4px 12px var(--primary-light);
+      }
+      .ft-bar .pay-btn:active {
+        background: var(--primary-dark);
+      }
+
+      /* =========================================================
+     商品详情页 — 忠实复刻（紫色品牌）+ 整改叠加
+     ========================================================= */
+      .gd-body {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        background: #fff;
+      }
+      .gd-body::-webkit-scrollbar {
+        width: 0;
+      }
+      .gd-hero {
+        position: relative;
+        height: 300px;
+        background: linear-gradient(
+          180deg,
+          #fff4d5 0%,
+          #ffe8a8 40%,
+          #fff 100%
+        );
+        overflow: hidden;
+      }
+      .gd-hero .pour {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 220px;
+        filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.15));
+        animation: floatHero 3s ease-in-out infinite;
+      }
+      @keyframes floatHero {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-5px);
+        }
+      }
+      .gd-hero .top-act {
+        position: absolute;
+        top: 44px;
+        left: 0;
+        right: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px var(--sp-4);
+      }
+      .gd-hero .back-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--r-full);
+        background: rgba(0, 0, 0, 0.4);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .gd-hero .mini-cap {
+        width: 88px;
+        height: 32px;
+        border-radius: var(--r-full);
+        background: rgba(0, 0, 0, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        color: var(--text-secondary);
+      }
+      .gd-hero .mini-cap svg {
+        width: 16px;
+        height: 16px;
+      }
+      /* 【整改增量】右侧悬浮分享按钮 */
+      .gd-hero .share-fab {
+        position: absolute;
+        right: var(--sp-4);
+        top: calc(44px + var(--sp-6) + 32px);
+        width: 36px;
+        height: 36px;
+        border-radius: var(--r-full);
+        background: rgba(255, 255, 255, 0.95);
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow-float);
+      }
+      /* 【整改增量】卡路里胶囊 */
+      .gd-hero .cal {
+        position: absolute;
+        left: var(--sp-4);
+        bottom: var(--sp-4);
+        padding: 5px 10px;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: var(--r-full);
+        font-size: var(--fs-xs);
+        box-shadow: var(--shadow-card);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .gd-hero .cal b {
+        color: var(--primary);
+      }
+
+      .gd-intro {
+        padding: 0 var(--sp-4) var(--sp-4);
+        background: #fff;
+      }
+      .gd-intro .nm {
+        font-size: var(--fs-lg);
+        font-weight: var(--fw-semibold);
+      }
+      .gd-intro .cat-chip {
+        display: inline-block;
+        margin-top: 6px;
+        padding: 2px 8px;
+        font-size: var(--fs-xs);
+        color: var(--success);
+        background: rgba(82, 196, 26, 0.12);
+        border-radius: 4px;
+      }
+      .gd-intro .ds {
+        margin-top: var(--sp-3);
+        font-size: var(--fs-sm);
+        color: var(--text-tertiary);
+        line-height: 1.5;
+      }
+      /* 【整改增量】关键词加重 */
+      .gd-intro .ds em {
+        color: var(--primary);
+        font-style: normal;
+        font-weight: var(--fw-medium);
+      }
+
+      /* 规格分组通用 */
+      .sg {
+        padding: var(--sp-4);
+        background: #fff;
+      }
+      .sg .hd {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: var(--sp-3);
+      }
+      .sg .hd .t {
+        font-size: var(--fs-sm);
+        color: var(--text-secondary);
+      }
+      .sg .hd .t .need {
+        color: var(--text-disabled);
+        margin-left: 4px;
+      }
+      .sg .hd .selnum {
+        font-size: var(--fs-xs);
+        color: var(--text-tertiary);
+      }
+      /* 【整改增量】上滑调整口味提示 */
+      .sg .hd .scroll-tip {
+        font-size: var(--fs-xs);
+        color: var(--primary);
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        animation: bob 1.2s ease-in-out infinite;
+      }
+      @keyframes bob {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-3px);
+        }
+      }
+
+      /* pill 按钮：圆角胶囊（忠实现状的紫色描边风格） */
+      .opts {
+        display: flex;
+        gap: var(--sp-2);
+        flex-wrap: wrap;
+      }
+      .opts .opt {
+        min-height: 36px;
+        padding: 6px 14px;
+        border-radius: var(--r-sm);
+        background: var(--bg-page);
+        border: 1.5px solid transparent;
+        font-size: var(--fs-sm);
+        color: var(--text-secondary);
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+      }
+      .opts .opt .star {
+        color: var(--primary);
+      }
+      .opts .opt.on {
+        background: var(--primary-light);
+        border-color: var(--primary);
+        color: var(--primary);
+        font-weight: var(--fw-medium);
+      }
+      .opts .opt.dis {
+        color: var(--text-disabled);
+        background: #fafafa;
+      }
+
+      /* 加料 2 列网格（忠实现状） */
+      .addons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--sp-3);
+      }
+      .addon {
+        position: relative;
+        height: 42px;
+        padding: 0 var(--sp-3);
+        border-radius: var(--r-full);
+        background: var(--bg-page);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--fs-sm);
+        color: var(--text-primary);
+      }
+      .addon.on {
+        background: var(--primary-light);
+        color: var(--primary);
+        font-weight: var(--fw-medium);
+        padding: 0 6px;
+        justify-content: space-between;
+      }
+      .addon.on .nm {
+        flex: 1;
+        text-align: center;
+      }
+      .addon .stp-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: var(--r-full);
+        background: var(--accent);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .addon .stp-btn.sub {
+        background: #fff;
+        color: var(--accent);
+        border: 1.5px solid var(--accent);
+      }
+      .addon .bd {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        min-width: 16px;
+        height: 16px;
+        padding: 0 3px;
+        background: var(--accent);
+        color: #fff;
+        font-size: var(--fs-tiny);
+        font-weight: var(--fw-semibold);
+        border-radius: var(--r-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* 底部双层栏 — 忠实现状 */
+      .gd-ft {
+        flex-shrink: 0;
+        background: #fff;
+        border-top: 1px solid var(--divider);
+        /* 【整改增量】阴影分割 */
+        box-shadow: var(--shadow-bottom);
+      }
+      .gd-ft .top-row {
+        padding: var(--sp-3) var(--sp-4) var(--sp-1);
+        display: flex;
+        align-items: center;
+        gap: var(--sp-3);
+      }
+      .gd-ft .top-row .tot {
+        flex: 1;
+        min-width: 0;
+      }
+      .gd-ft .top-row .tot .pr {
+        display: flex;
+        align-items: baseline;
+      }
+      .gd-ft .top-row .tot .pr .sym {
+        font-size: var(--fs-sm);
+        color: var(--primary);
+      }
+      .gd-ft .top-row .tot .pr .num {
+        font-size: var(--fs-xl);
+        font-weight: var(--fw-semibold);
+        color: var(--primary);
+      }
+      .gd-ft .top-row .tot .brief {
+        font-size: var(--fs-tiny);
+        color: var(--text-tertiary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 1px;
+      }
+      .gd-ft .top-row .stp {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-3);
+      }
+      .gd-ft .top-row .stp button {
+        width: 28px;
+        height: 28px;
+        border-radius: var(--r-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .gd-ft .top-row .stp .mi {
+        background: #fff;
+        border: 1px solid var(--text-disabled);
+        color: var(--text-secondary);
+      }
+      .gd-ft .top-row .stp .pl {
+        background: #fff;
+        border: 1px solid var(--text-disabled);
+        color: var(--text-secondary);
+      }
+      .gd-ft .top-row .stp .q {
+        font-size: var(--fs-base);
+        font-weight: var(--fw-medium);
+      }
+      .gd-ft .bot-row {
+        padding: var(--sp-2) var(--sp-4) calc(var(--sp-3) + 22px);
+        display: flex;
+        gap: var(--sp-3);
+      }
+      .gd-ft .bot-row .rs {
+        height: 44px;
+        padding: 0 var(--sp-5);
+        border: 1.5px solid var(--accent);
+        color: var(--accent);
+        font-size: var(--fs-base);
+        font-weight: var(--fw-medium);
+        border-radius: var(--r-full);
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        background: #fff;
+      }
+      .gd-ft .bot-row .add {
+        flex: 1;
+        height: 44px;
+        background: var(--primary);
+        color: #fff;
+        font-size: var(--fs-base);
+        font-weight: var(--fw-semibold);
+        border-radius: var(--r-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px var(--primary-light);
+      }
+      .gd-ft .bot-row .add:active {
+        background: var(--primary-dark);
+      }
+
+      /* =========================================================
+     右侧清单
+     ========================================================= */
+      .panel {
+        background: #fff;
+        border-left: 1px solid var(--divider);
+        overflow-y: auto;
+        padding: var(--sp-5);
+      }
+      .panel h2 {
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        margin-bottom: var(--sp-2);
+      }
+      .panel .lead {
+        font-size: var(--fs-xs);
+        color: var(--text-tertiary);
+        line-height: var(--lh-normal);
+        margin-bottom: var(--sp-4);
+      }
+      .panel .note {
+        margin-bottom: var(--sp-4);
+        padding: var(--sp-3);
+        background: var(--primary-bg);
+        border-left: 3px solid var(--primary);
+        border-radius: 0 var(--r-sm) var(--r-sm) 0;
+        font-size: var(--fs-xs);
+        color: var(--text-secondary);
+        line-height: var(--lh-normal);
+      }
+      .panel .note b {
+        color: var(--primary);
+        font-weight: var(--fw-semibold);
+      }
+      .panel details {
+        border: 1px solid var(--divider);
+        border-radius: var(--r-md);
+        margin-bottom: var(--sp-3);
+        overflow: hidden;
+      }
+      .panel details[open] {
+        background: #fafbfc;
+      }
+      .panel summary {
+        padding: var(--sp-3) var(--sp-4);
+        font-size: var(--fs-sm);
+        font-weight: var(--fw-semibold);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        list-style: none;
+      }
+      .panel summary::-webkit-details-marker {
+        display: none;
+      }
+      .panel summary .c {
+        font-size: var(--fs-xs);
+        color: var(--text-tertiary);
+        font-weight: var(--fw-regular);
+        margin-left: auto;
+      }
+      .panel summary .c .done {
+        color: var(--primary);
+        font-weight: var(--fw-semibold);
+      }
+      /* 【v5】分节标题里标"整体重写 / 新增 sheet"等重构属性 */
+      .panel summary .sec-mod {
+        display: inline-block;
+        margin-left: 6px;
+        padding: 1px 6px;
+        font-size: var(--fs-tiny);
+        font-weight: var(--fw-medium);
+        background: var(--primary-bg);
+        color: var(--primary);
+        border-radius: var(--r-full);
+        letter-spacing: 0.3px;
+      }
+      .panel summary .sec-mod.sec-rebuild {
+        background: rgba(255, 80, 78, 0.12);
+        color: var(--danger);
+      }
+      .panel .its {
+        padding: 0 var(--sp-3) var(--sp-3);
+      }
+      .panel .it {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--sp-2);
+        padding: var(--sp-2);
+        border-radius: var(--r-sm);
+      }
+      .panel .it:hover {
+        background: var(--bg-page);
+      }
+      .panel .it input {
+        margin-top: 3px;
+        accent-color: var(--primary);
+        cursor: pointer;
+      }
+      .panel .it label {
+        flex: 1;
+        font-size: var(--fs-xs);
+        color: var(--text-secondary);
+        line-height: var(--lh-normal);
+      }
+      .panel .it label b {
+        color: var(--text-primary);
+        font-weight: var(--fw-medium);
+      }
+      .panel .it label em {
+        color: var(--text-tertiary);
+        font-style: normal;
+      }
+      /* 【v5】后台同步色标 tag —— 同步 PRD v3「后台同步」标注 */
+      .panel .it-tag {
+        display: inline-block;
+        margin-left: 4px;
+        padding: 0 5px;
+        height: 14px;
+        line-height: 14px;
+        font-size: 9px;
+        font-weight: var(--fw-medium);
+        border-radius: var(--r-full);
+        vertical-align: 1px;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+      }
+      .panel .it-tag.t-fe {
+        background: rgba(0, 0, 0, 0.06);
+        color: var(--text-tertiary);
+      }
+      .panel .it-tag.t-schema {
+        background: rgba(255, 191, 0, 0.2);
+        color: #a06800;
+      }
+      .panel .it-tag.t-api {
+        background: rgba(255, 80, 78, 0.12);
+        color: var(--danger);
+      }
+      .panel .it-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: var(--sp-2);
+        padding: 6px var(--sp-2);
+        background: var(--bg-page);
+        border-radius: var(--r-sm);
+        font-size: var(--fs-tiny);
+        color: var(--text-tertiary);
+        align-items: center;
+      }
+      .panel .it-legend .lg-t {
+        margin-right: 2px;
+      }
+      /* 【v5】CMS / 后台同步影响小节 */
+      .panel details.cms-risks-block summary {
+        color: var(--danger);
+      }
+      .panel .cms-risks {
+        padding: 0 var(--sp-3) var(--sp-3);
+      }
+      .panel .cms-risks .risk {
+        padding: var(--sp-2);
+        margin-bottom: var(--sp-2);
+        border-radius: var(--r-sm);
+        background: var(--bg-page);
+        font-size: var(--fs-xs);
+        line-height: var(--lh-normal);
+      }
+      .panel .cms-risks .risk:last-child {
+        margin-bottom: 0;
+      }
+      .panel .cms-risks .risk b {
+        display: block;
+        color: var(--text-primary);
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-semibold);
+        margin-bottom: 2px;
+      }
+      .panel .cms-risks .risk em {
+        color: var(--text-secondary);
+        font-style: normal;
+        font-size: 11px;
+      }
+      .panel .cms-risks .risk.r-arch b {
+        color: var(--danger);
+      }
+      .panel .cms-risks .risk.r-arch {
+        background: rgba(255, 80, 78, 0.08);
+        border-left: 3px solid var(--danger);
+      }
+      .panel .cms-risks .risk.r-schema b {
+        color: #a06800;
+      }
+      .panel .cms-risks .risk.r-api b {
+        color: var(--primary);
+      }
+
+      /* SVG 样式 */
+      .i {
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex-shrink: 0;
+      }
+      .is {
+        width: 14px;
+        height: 14px;
+      }
+      .ix {
+        width: 11px;
+        height: 11px;
+      }
+      .il {
+        width: 24px;
+        height: 24px;
+      }
+
+      /* =========================================================
+         整改增量补齐（对齐《点单页整改 PRD》§1–§9）
+         ========================================================= */
+
+      /* §1.2 堂食/外卖切换：放大版,作为门店信息右栏单独占据区域,垂直拉伸 */
+      .shop-info .dine-switch {
+        align-self: stretch;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        background: var(--bg-page);
+        border-radius: var(--r-md);
+        padding: 4px;
+      }
+      .shop-info .dine-switch button {
+        padding: 5px 10px;
+        font-size: 13px;
+        color: var(--text-secondary);
+        border-radius: var(--r-sm);
+        font-weight: var(--fw-medium);
+        transition: all var(--d-fast) var(--e-default);
+        line-height: 1.2;
+      }
+      .shop-info .dine-switch button.on {
+        background: #fff;
+        color: var(--text-primary);
+        font-weight: var(--fw-semibold);
+        box-shadow: var(--shadow-card);
+      }
+      .dine-switch button.on {
+        background: #fff;
+        color: var(--text-primary);
+        font-weight: var(--fw-semibold);
+        box-shadow: var(--shadow-card);
+      }
+
+      /* 门店信息：左栏(店名+距离两行) + 右栏(堂食/外卖 放大独占垂直拉伸) */
+      .shop-info {
+        display: flex;
+        align-items: stretch;
+        gap: var(--sp-2);
+      }
+      .shop-info .shop-left {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .shop-info .shop-name-area {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        min-width: 0;
+      }
+      .fav-store {
+        flex-shrink: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--r-full);
+      }
+      .fav-store .fav-ic {
+        width: 16px;
+        height: 16px;
+        color: var(--text-tertiary);
+        fill: none;
+        transition:
+          transform var(--d-fast) var(--e-default),
+          color var(--d-fast) var(--e-default);
+      }
+      .fav-store[aria-pressed='true'] .fav-ic {
+        color: var(--primary);
+        fill: var(--primary);
+      }
+      .fav-store:active .fav-ic {
+        transform: scale(0.82);
+      }
+      .heart-fill {
+        color: var(--primary);
+        fill: var(--primary);
+      }
+
+      /* §1.5 制作中指示与「距离您 X km」同排（参考霸王茶姬）：内联 pill，流光进度条 + 三态色阶 */
+      .shop-row2 {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+        justify-content: space-between;
+      }
+      .shop-row2 .dist {
+        flex-shrink: 0;
+        margin-top: 0;
+      }
+      .dist-making {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 7px 3px 8px;
+        border-radius: var(--r-full);
+        cursor: pointer;
+        transition: background var(--d-slow) var(--e-default);
+        line-height: 1.1;
+      }
+      .dist-making .i {
+        width: 12px;
+        height: 12px;
+      }
+      .dist-making .dm-num {
+        display: inline-flex;
+        align-items: baseline;
+        white-space: nowrap;
+      }
+      .dist-making .dm-num b {
+        font-size: var(--fs-sm);
+        font-weight: var(--fw-semibold);
+        line-height: 1;
+      }
+      .dist-making .dm-num .dm-lbl {
+        font-size: var(--fs-tiny);
+        margin-left: 2px;
+      }
+      .dist-making .dm-prog {
+        display: inline-block;
+        width: 48px;
+        height: 3px;
+        border-radius: var(--r-full);
+        background: rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+      .dist-making .dm-prog .fill {
+        display: block;
+        height: 100%;
+        width: 0;
+        border-radius: var(--r-full);
+        background: linear-gradient(90deg, var(--accent), var(--primary));
+        position: relative;
+        transition: width 600ms var(--e-default);
+      }
+      .dist-making .dm-prog .fill::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.55),
+          transparent
+        );
+        animation: os-shine 1.5s linear infinite;
+      }
+      @keyframes os-shine {
+        0% {
+          transform: translateX(-100%);
+        }
+        100% {
+          transform: translateX(120%);
+        }
+      }
+      .dist-making .dm-chev {
+        width: 9px;
+        height: 9px;
+        opacity: 0.65;
+      }
+      /* 三态色阶 */
+      .dist-making[data-state='none'] {
+        background: var(--bg-page);
+        color: var(--text-tertiary);
+      }
+      .dist-making[data-state='busy'] {
+        background: var(--primary-bg);
+        color: var(--primary);
+      }
+      .dist-making[data-state='peak'] {
+        background: rgba(255, 80, 78, 0.1);
+        color: var(--danger);
+      }
+      .dist-making[data-state='peak'] .dm-prog .fill {
+        background: linear-gradient(90deg, #ff8a5c, var(--danger));
+      }
+      .dist-making[data-state='none'] .dm-prog {
+        display: none;
+      }
+
+      /* §5.4 不可结算 disabled 态 */
+      .cart-cta.disabled {
+        background: var(--text-disabled);
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+      .cart-cta.disabled:active {
+        background: var(--text-disabled);
+      }
+
+      /* §4 选规格弹窗 */
+      .spec-hd {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-3);
+        padding: var(--sp-4);
+        border-bottom: 1px solid var(--divider);
+      }
+      .spec-hd .spec-im {
+        width: 56px;
+        height: 56px;
+        border-radius: var(--r-sm);
+        flex-shrink: 0;
+        position: relative;
+      }
+      .spec-hd .spec-im .em {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+      }
+      .spec-hd .spec-meta {
+        flex: 1;
+        min-width: 0;
+      }
+      .spec-hd .spec-meta .nm {
+        font-size: var(--fs-base);
+        font-weight: var(--fw-semibold);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .spec-hd .spec-meta .pr {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        margin-top: 4px;
+      }
+      .spec-hd .spec-meta .pr .cur {
+        color: var(--primary);
+        font-weight: var(--fw-semibold);
+      }
+      .spec-hd .spec-meta .pr .cur .sym {
+        font-size: var(--fs-xs);
+      }
+      .spec-hd .spec-meta .pr .cur .num {
+        font-size: var(--fs-lg);
+      }
+      .spec-hd .spec-meta .pr .orig {
+        font-size: var(--fs-xs);
+        color: var(--text-tertiary);
+        text-decoration: line-through;
+      }
+      .spec-close {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-tertiary);
+        flex-shrink: 0;
+      }
+      .spec-bd {
+        overflow-y: auto;
+        max-height: 42vh;
+      }
+      .spec-bd::-webkit-scrollbar {
+        width: 0;
+      }
+      /* §4.1 规格数量角标：外圈 2px 白色描边作分界 */
+      .opts .opt {
+        position: relative;
+      }
+      .opts .opt .qbadge {
+        position: absolute;
+        top: -7px;
+        right: -7px;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 4px;
+        font-size: var(--fs-tiny);
+        font-weight: var(--fw-semibold);
+        color: #fff;
+        background: var(--primary);
+        border-radius: var(--r-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 0 2px #fff;
+      }
+      .spec-ft {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: var(--sp-3);
+        padding: var(--sp-3) var(--sp-4) calc(var(--sp-4) + 6px);
+        border-top: 1px solid var(--divider);
+      }
+      .spec-ft .tot {
+        display: flex;
+        align-items: baseline;
+      }
+      .spec-ft .tot .sym {
+        font-size: var(--fs-sm);
+        color: var(--primary);
+      }
+      .spec-ft .tot .num {
+        font-size: var(--fs-xl);
+        font-weight: var(--fw-semibold);
+        color: var(--primary);
+      }
+      .spec-ft .stp {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+      }
+      .spec-ft .stp button {
+        width: 26px;
+        height: 26px;
+        border-radius: var(--r-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+      }
+      .spec-ft .stp .q {
+        min-width: 16px;
+        text-align: center;
+        font-weight: var(--fw-semibold);
+      }
+      .spec-ft .spec-add {
+        flex: 1;
+        height: 42px;
+        background: var(--primary);
+        color: #fff;
+        font-weight: var(--fw-semibold);
+        border-radius: var(--r-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .spec-ft .spec-add:active {
+        background: var(--primary-dark);
+      }
+
+      /* §6 购物车浮层强化 */
+      .sheet.tall {
+        max-height: 80%;
+      }
+      .cart-tools {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-4);
+      }
+      .cart-tools .sel-all {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: var(--fs-xs);
+        color: var(--text-secondary);
+      }
+      .cart-tools .sel-all .ck-mini {
+        width: 16px;
+        height: 16px;
+        border-radius: var(--r-full);
+        border: 1.5px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+      }
+      .cart-tools .sel-all.on .ck-mini {
+        background: var(--primary);
+        border-color: var(--primary);
+      }
+      .cart-tools .sel-all:not(.on) .ck-mini svg {
+        visibility: hidden;
+      }
+      .cart-tools .clr {
+        color: var(--text-tertiary);
+        font-size: var(--fs-xs);
+        display: flex;
+        align-items: center;
+        gap: 3px;
+      }
+      .cart-discount {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: var(--sp-2) var(--sp-4);
+        background: var(--primary-bg);
+        color: var(--primary);
+        font-size: var(--fs-xs);
+      }
+      .cart-discount .ix {
+        color: var(--primary);
+      }
+      .cart-discount b {
+        font-weight: var(--fw-semibold);
+      }
+      .cart-coupon {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--sp-3) var(--sp-4);
+        border-bottom: 1px solid var(--divider);
+      }
+      .cart-coupon .cc-left {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: var(--fs-sm);
+        color: var(--text-primary);
+        font-weight: var(--fw-medium);
+      }
+      .cart-coupon .cc-left .ix {
+        color: var(--primary);
+      }
+      .cart-coupon .cc-right {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        font-size: var(--fs-xs);
+        color: var(--text-tertiary);
+      }
+      #cart-sheet .sheet-bd {
+        background: var(--bg-page);
+        padding: var(--sp-4) 0 var(--sp-1);
+      }
+      #cart-sheet .ci {
+        margin: 0 var(--sp-4) var(--sp-4);
+        padding: var(--sp-3);
+        background: #fff;
+        border-radius: var(--r-md);
+        box-shadow: var(--shadow-card);
+      }
+      .ci .info .p .cut {
+        font-size: var(--fs-tiny);
+        color: var(--text-tertiary);
+        margin-left: 6px;
+      }
+      .cart-foot {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: var(--sp-3);
+        padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + 6px);
+        border-top: 1px solid var(--divider);
+        background: #fff;
+        box-shadow: var(--shadow-bottom);
+      }
+      .cart-foot .cf-price {
+        flex: 1;
+        min-width: 0;
+      }
+      .cart-foot .cf-price .line1 {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+        font-size: var(--fs-xs);
+        color: var(--text-secondary);
+      }
+      .cart-foot .cf-price .line1 .cnt {
+        color: var(--text-tertiary);
+      }
+      .cart-foot .cf-price .line1 .sym {
+        color: var(--primary);
+        margin-left: 2px;
+      }
+      .cart-foot .cf-price .line1 .num {
+        color: var(--primary);
+        font-size: var(--fs-lg);
+        font-weight: var(--fw-semibold);
+      }
+      .cart-foot .cf-price .line2 {
+        font-size: var(--fs-tiny);
+        color: var(--primary);
+        margin-top: 1px;
+      }
+      .cart-foot .cf-cta {
+        height: 42px;
+        padding: 0 var(--sp-6);
+        background: var(--primary);
+        color: #fff;
+        font-weight: var(--fw-semibold);
+        border-radius: var(--r-full);
+        display: flex;
+        align-items: center;
+      }
+      .cart-foot .cf-cta:active {
+        background: var(--primary-dark);
+      }
+      .cart-empty {
+        padding: var(--sp-8) var(--sp-4);
+        text-align: center;
+        color: var(--text-tertiary);
+        font-size: var(--fs-sm);
+      }
+
+      /* §7.1 门店切换弹窗 */
+      .store-bd {
+        background: var(--bg-page);
+        padding: var(--sp-2) var(--sp-4) var(--sp-5);
+      }
+      .store-grp {
+        margin-bottom: var(--sp-3);
+      }
+      .store-grp-t {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: var(--fs-xs);
+        color: var(--text-tertiary);
+        font-weight: var(--fw-medium);
+        margin: var(--sp-3) 2px var(--sp-2);
+      }
+      .store-card {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-3);
+        padding: var(--sp-3) var(--sp-4);
+        background: #fff;
+        border-radius: var(--r-md);
+        border: 1px solid transparent;
+        box-shadow: var(--shadow-card);
+        margin-bottom: var(--sp-3);
+      }
+      .store-card.on {
+        border-color: var(--primary);
+        background: var(--primary-bg);
+      }
+      .store-card .sc-main {
+        flex: 1;
+        min-width: 0;
+      }
+      .store-card .sc-top {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .store-card .sc-nm {
+        font-size: var(--fs-base);
+        font-weight: var(--fw-semibold);
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .store-card .sc-tag {
+        flex-shrink: 0;
+        font-size: var(--fs-tiny);
+        padding: 0 5px;
+        height: 16px;
+        line-height: 16px;
+        border-radius: var(--r-full);
+        background: rgba(82, 196, 26, 0.12);
+        color: var(--success);
+      }
+      .store-card .sc-tag.rest {
+        background: var(--bg-page);
+        color: var(--text-tertiary);
+      }
+      .store-card .sc-addr {
+        font-size: var(--fs-xs);
+        color: var(--text-secondary);
+        margin-top: 4px;
+        line-height: 1.4;
+      }
+      .store-card .sc-dist {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        font-size: var(--fs-xs);
+        color: var(--text-tertiary);
+        margin-top: 3px;
+      }
+      .store-card .sc-check {
+        width: 20px;
+        height: 20px;
+        color: var(--primary);
+        flex-shrink: 0;
+        opacity: 0;
+      }
+      .store-card.on .sc-check {
+        opacity: 1;
+      }
+
+      /* 右侧面板：状态演示控制（§1.5 / §5.4 互斥态） */
+      .demo-ctrl {
+        margin-bottom: var(--sp-4);
+        padding: var(--sp-3);
+        border: 1px dashed var(--border);
+        border-radius: var(--r-md);
+        background: #fff;
+      }
+      .demo-ctrl .dc-t {
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-semibold);
+        color: var(--text-primary);
+        margin-bottom: var(--sp-2);
+      }
+      .demo-ctrl .dc-row {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+        margin-bottom: var(--sp-2);
+      }
+      .demo-ctrl .dc-row:last-of-type {
+        margin-bottom: 0;
+      }
+      .demo-ctrl .dc-label {
+        font-size: var(--fs-xs);
+        color: var(--text-tertiary);
+        width: 60px;
+        flex-shrink: 0;
+      }
+      .demo-ctrl .seg {
+        display: inline-flex;
+        background: var(--bg-page);
+        border-radius: var(--r-full);
+        padding: 2px;
+        gap: 2px;
+      }
+      .demo-ctrl .seg button {
+        padding: 3px 10px;
+        font-size: var(--fs-tiny);
+        color: var(--text-secondary);
+        border-radius: var(--r-full);
+      }
+      .demo-ctrl .seg button.on {
+        background: var(--primary);
+        color: #fff;
+        font-weight: var(--fw-medium);
+      }
+      .demo-ctrl .dc-hint {
+        font-size: var(--fs-tiny);
+        color: var(--text-tertiary);
+        margin-top: var(--sp-2);
+        line-height: 1.5;
+      }
+
+      /* 逻辑项标记（清单中纯逻辑/动效项） */
+      .panel .it.logic label b::after {
+        content: ' · 逻辑项·见 PRD';
+        color: var(--text-disabled);
+        font-weight: var(--fw-regular);
+        font-size: var(--fs-tiny);
+      }
+
+      /* =========================================================
+         现状 ⇄ 整改 联动：勾选=整改态，取消=现状/无该增量
+         （off-KEY 加在 #page-menu 上，id 前缀保证覆盖基础规则）
+         ========================================================= */
+      /* §1.1 控件 32px → 现状 30px */
+      #page-menu.off-ctrlsize .m-nav .pin,
+      #page-menu.off-ctrlsize .m-nav .search {
+        height: 30px;
+        font-size: var(--fs-xs);
+      }
+      /* §1.2 规整 → 现状偏上、无胶囊化（参差不规整） */
+      #page-menu.off-dinecenter .m-nav .dine-switch {
+        align-self: flex-start;
+        background: transparent;
+        padding: 0;
+      }
+      #page-menu.off-dinecenter .m-nav .dine-switch button.on {
+        background: transparent;
+        box-shadow: none;
+        color: var(--text-primary);
+      }
+      /* §1.3 距离前图标 */
+      #page-menu.off-disticon .shop-info .dist svg {
+        display: none;
+      }
+      /* §1.4 收藏爱心 */
+      #page-menu.off-fav .fav-store {
+        display: none;
+      }
+      /* §2.1 角标统一 → 现状旧样式 + 隐藏 HOT */
+      #page-menu.off-badgeunify .cat .ntag {
+        top: 2px;
+        left: 2px;
+        height: 13px;
+        line-height: 13px;
+        font-size: 9px;
+        border-radius: 7px;
+      }
+      #page-menu.off-badgeunify .cat .ntag.hot {
+        display: none;
+      }
+      /* §2.3 滚动条隐藏 → 现状显示 */
+      #page-menu.off-scrollbar .sidebar {
+        scrollbar-width: auto;
+      }
+      #page-menu.off-scrollbar .sidebar::-webkit-scrollbar {
+        width: 6px;
+      }
+      #page-menu.off-scrollbar .sidebar::-webkit-scrollbar-thumb {
+        background: var(--text-disabled);
+        border-radius: 3px;
+      }
+      /* §2.4 加购数量角标 */
+      #page-menu.off-cartcnt .cat .cart-cnt {
+        display: none;
+      }
+      /* §2.5 选中态 → 现状只加粗 */
+      #page-menu.off-selstate .cat.on {
+        background: transparent;
+        color: var(--text-primary);
+      }
+      #page-menu.off-selstate .cat.on::before {
+        display: none;
+      }
+      /* §3.1 价格层级 → 现状（现价全品牌色 / 原价 10px 浅灰） */
+      #page-menu.off-pricetier .pd .pr.plain .cur {
+        color: var(--primary);
+      }
+      #page-menu.off-pricetier .pd .pr .orig {
+        font-size: var(--fs-tiny);
+        color: var(--text-disabled);
+      }
+      /* §4.1 数量角标白色分界线 */
+      #page-menu.off-qring .opts .opt .qbadge {
+        box-shadow: none;
+      }
+      /* §5.1 加购角标 → 现状黑色 */
+      #page-menu.off-cartcolor .cart-bag .bd {
+        background: #1a1a1a;
+      }
+      /* §5.2 + 图标对齐 → 现状偏上 */
+      #page-menu.off-plusalign .cart-bag .bag-ic {
+        transform: translateY(-3px);
+      }
+      /* §1.5 现状：距离行不带制作中指示（无 pill / 无进度条） */
+      #page-menu.off-makingbar .dist-making {
+        display: none;
+      }
+      /* §5.4 disabled 视觉 → 现状无灰化 */
+      #page-menu.off-disabled .cart-cta.disabled {
+        background: var(--primary);
+        cursor: pointer;
+      }
+      /* §6.2 勾选框 */
+      #page-menu.off-ck .ci .ck {
+        display: none;
+      }
+      /* §6.5 多色价格层次 */
+      #page-menu.off-multiprice .ci .info .p .cut,
+      #page-menu.off-multiprice .ci .info .p .orig {
+        display: none;
+      }
+      /* §6.6 顶部工具条（全选 + 折扣条） */
+      #page-menu.off-tools .cart-tools .sel-all {
+        display: none;
+      }
+      #page-menu.off-tools .cart-discount {
+        display: none;
+      }
+      /* §6.7 优惠券入口 */
+      #page-menu.off-coupon .cart-coupon {
+        display: none;
+      }
+      /* §6.8 折扣价显示 */
+      #page-menu.off-discprice .cart-foot .cf-price .line2 {
+        display: none;
+      }
+      /* §6.9 可视区扩大 + 卡片化 → 现状 */
+      #page-menu.off-cards .sheet.tall {
+        max-height: 65%;
+      }
+      #page-menu.off-cards #cart-sheet .sheet-bd {
+        background: #fff;
+        padding: 0;
+      }
+      #page-menu.off-cards #cart-sheet .ci {
+        margin: 0;
+        padding: var(--sp-3) var(--sp-4);
+        background: transparent;
+        border-radius: 0;
+        box-shadow: none;
+      }
+      /* §7.1 门店卡片 → 现状密集无层次 */
+      #page-menu.off-storecard .store-bd {
+        background: #fff;
+      }
+      #page-menu.off-storecard .store-card {
+        box-shadow: none;
+        border: none;
+        border-bottom: 1px solid var(--divider);
+        border-radius: 0;
+        padding: var(--sp-2) var(--sp-4);
+        margin-bottom: 0;
+      }
+      #page-menu.off-storecard .store-card.on {
+        background: transparent;
+      }
+      #page-menu.off-storecard .store-card .sc-nm {
+        font-size: var(--fs-sm);
+      }
+      /* §9.2 分类标题吸顶 → 现状不吸顶 */
+      #page-menu.off-sticky .sec-title {
+        position: static;
+      }
+    </style>
+  </head>
+
+  <body>
+    <svg width="0" height="0" style="position: absolute">
+      <defs>
+        <symbol id="i-right" viewBox="0 0 24 24">
+          <polyline points="9 18 15 12 9 6" />
+        </symbol>
+        <symbol id="i-down" viewBox="0 0 24 24">
+          <polyline points="6 9 12 15 18 9" />
+        </symbol>
+        <symbol id="i-up" viewBox="0 0 24 24">
+          <polyline points="18 15 12 9 6 15" />
+        </symbol>
+        <symbol id="i-back" viewBox="0 0 24 24">
+          <polyline points="15 18 9 12 15 6" />
+        </symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </symbol>
+        <symbol id="i-minus" viewBox="0 0 24 24">
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </symbol>
+        <symbol id="i-check" viewBox="0 0 24 24">
+          <polyline points="20 6 9 17 4 12" />
+        </symbol>
+        <symbol id="i-search" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </symbol>
+        <symbol id="i-share" viewBox="0 0 24 24">
+          <circle cx="18" cy="5" r="3" />
+          <circle cx="6" cy="12" r="3" />
+          <circle cx="18" cy="19" r="3" />
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+        </symbol>
+        <symbol id="i-loc" viewBox="0 0 24 24">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1118 0z" />
+          <circle cx="12" cy="10" r="3" />
+        </symbol>
+        <symbol id="i-time" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </symbol>
+        <symbol id="i-users" viewBox="0 0 24 24">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+        </symbol>
+        <symbol id="i-ellipsis" viewBox="0 0 24 24">
+          <circle cx="5" cy="12" r="1.5" fill="currentColor" />
+          <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+          <circle cx="19" cy="12" r="1.5" fill="currentColor" />
+        </symbol>
+        <symbol id="i-circle" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+        </symbol>
+        <symbol id="i-refresh" viewBox="0 0 24 24">
+          <polyline points="23 4 23 10 17 10" />
+          <polyline points="1 20 1 14 7 14" />
+          <path
+            d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"
+          />
+        </symbol>
+        <symbol id="i-star" viewBox="0 0 24 24">
+          <polygon
+            fill="currentColor"
+            points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+          />
+        </symbol>
+        <symbol id="i-heart" viewBox="0 0 24 24">
+          <path
+            d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"
+          />
+        </symbol>
+        <symbol id="i-ticket" viewBox="0 0 24 24">
+          <path
+            d="M3 8a2 2 0 012-2h14a2 2 0 012 2v2a2 2 0 000 4v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2a2 2 0 000-4z"
+          />
+          <line x1="13" y1="6" x2="13" y2="18" stroke-dasharray="2 2" />
+        </symbol>
+        <symbol id="i-close" viewBox="0 0 24 24">
+          <line x1="6" y1="6" x2="18" y2="18" />
+          <line x1="18" y1="6" x2="6" y2="18" />
+        </symbol>
+        <symbol id="i-home" viewBox="0 0 24 24">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </symbol>
+        <symbol id="i-menu" viewBox="0 0 24 24">
+          <rect x="4" y="3" width="16" height="18" rx="2" />
+          <line x1="8" y1="8" x2="16" y2="8" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+          <line x1="8" y1="16" x2="13" y2="16" />
+        </symbol>
+        <symbol id="i-vip" viewBox="0 0 24 24">
+          <path d="M3 8h18l-3 12H6L3 8z" />
+          <path d="M8 8V5a4 4 0 018 0v3" />
+          <circle cx="12" cy="14" r="1.5" />
+        </symbol>
+        <symbol id="i-receipt" viewBox="0 0 24 24">
+          <path d="M6 2h12v20l-3-2-3 2-3-2-3 2z" />
+          <line x1="9" y1="7" x2="15" y2="7" />
+          <line x1="9" y1="11" x2="15" y2="11" />
+          <line x1="9" y1="15" x2="13" y2="15" />
+        </symbol>
+        <symbol id="i-user" viewBox="0 0 24 24">
+          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
+        </symbol>
+        <symbol id="i-signal" viewBox="0 0 24 24">
+          <rect x="2" y="18" width="3" height="4" fill="currentColor" />
+          <rect x="7" y="14" width="3" height="8" fill="currentColor" />
+          <rect x="12" y="10" width="3" height="12" fill="currentColor" />
+          <rect x="17" y="6" width="3" height="16" fill="currentColor" />
+        </symbol>
+        <symbol id="i-battery" viewBox="0 0 24 24">
+          <rect x="1" y="6" width="18" height="12" rx="2" />
+          <rect x="3" y="8" width="14" height="8" fill="currentColor" />
+        </symbol>
+        <symbol id="i-wifi" viewBox="0 0 24 24">
+          <path d="M5 12.55a11 11 0 0114.08 0" />
+          <path d="M1.42 9a16 16 0 0121.16 0" />
+          <path d="M8.53 16.11a6 6 0 016.95 0" />
+          <line x1="12" y1="20" x2="12.01" y2="20" />
+        </symbol>
+        <symbol id="i-bag" viewBox="0 0 32 32">
+          <path
+            fill="currentColor"
+            d="M9 10h14l-1.5 16a2 2 0 01-2 1.8H12.5a2 2 0 01-2-1.8L9 10z"
+          />
+          <path
+            fill="#fff"
+            d="M13 10V7a3 3 0 116 0v3"
+            stroke="#fff"
+            stroke-width="0"
+          />
+          <path
+            stroke="#fff"
+            stroke-width="1.5"
+            fill="none"
+            d="M13 10V7a3 3 0 116 0v3"
+          />
+        </symbol>
+      </defs>
+    </svg>
+
+    <div class="app">
+      <header class="toolbar">
+        <div class="brand">Cater · <em>UI 整改原型 v5</em></div>
+        <div class="vd"></div>
+        <div class="tabs" id="pg-tabs">
+          <button class="active" data-page="menu">点单页</button>
+          <button data-page="goods">商品详情</button>
+          <button data-page="checkout">结算页</button>
+        </div>
+        <div class="theme">
+          <span class="theme-label">主色 (CMS)</span>
+          <div class="swatch on" data-color="#d93a3a" style="background: #d93a3a" title="品牌红"></div>
+          <div class="swatch" data-color="#7a5c82" style="background: #7a5c82" title="品牌紫"></div>
+          <div class="swatch" data-color="#0033ff" style="background: #0033ff" title="经典蓝"></div>
+          <div class="swatch" data-color="#2a9d5f" style="background: #2a9d5f" title="柠茶绿"></div>
+          <div class="swatch" data-color="#e67e22" style="background: #e67e22" title="暖橙"></div>
+          <div class="swatch" data-color="#222222" style="background: #222222" title="极简黑"></div>
+        </div>
+      </header>
+
+      <main class="stage">
+        <div class="device">
+          <div class="screen">
+            <!-- ============== 点单页 ============== -->
+            <section class="page active" id="page-menu">
+              <div class="status-bar">
+                <span>11:12</span>
+                <span class="icons">
+                  <svg class="i is" style="stroke-width: 0"><use href="#i-signal" /></svg>
+                  <svg class="i is"><use href="#i-wifi" /></svg>
+                  <svg class="i is" style="stroke-width: 0"><use href="#i-battery" /></svg>
+                </span>
+              </div>
+
+              <!-- 顶部条：一起拼 + 搜索（铺满）+ 微信系统胶囊；顺序贴合 Cater 原版 -->
+              <div class="m-nav">
+                <button class="pin">
+                  <svg><use href="#i-users" /></svg>
+                  <span>一起拼</span>
+                </button>
+                <div class="search">
+                  <svg class="i is"><use href="#i-search" /></svg>
+                  <span>搜索商品</span>
+                </div>
+                <div class="mini-cap">
+                  <svg><use href="#i-ellipsis" /></svg>
+                  <svg><use href="#i-circle" /></svg>
+                </div>
+              </div>
+
+              <!-- 门店信息：左栏(店名+爱心 / 距离+制作中) + 右栏 堂食/外卖 放大独占 -->
+              <div class="shop-info">
+                <div class="shop-left">
+                  <div class="shop-name-area" onclick="showSheet('store-sheet')">
+                    <div class="name">
+                      <span class="nm-text">上海静安大宁久光中心店</span>
+                      <svg class="i ix down"><use href="#i-down" /></svg>
+                    </div>
+                    <!-- 【整改 §1.4】收藏门店：空心♡ / 实心♥ -->
+                    <button
+                      class="fav-store"
+                      aria-pressed="false"
+                      onclick="event.stopPropagation(); toggleFav(this)"
+                    >
+                      <svg class="i fav-ic"><use href="#i-heart" /></svg>
+                    </button>
+                  </div>
+                  <div class="shop-row2">
+                    <div class="dist">
+                      <svg class="i ix"><use href="#i-loc" /></svg>
+                      距离您 2.4km
+                    </div>
+                    <!-- 【整改 §1.5】制作中指示与距离同排：数字突出 + 流光进度条 + 三态 -->
+                    <button
+                      class="dist-making"
+                      id="order-status"
+                      data-state="busy"
+                      onclick="event.stopPropagation(); cycleMaking()"
+                      title="点击切换 暂无 / 制作中 / 高峰 三态"
+                    >
+                      <svg class="i"><use href="#i-time" /></svg>
+                      <span class="dm-num"><b>3</b><span class="dm-lbl">单制作中</span></span>
+                      <span class="dm-prog"><span class="fill"></span></span>
+                      <svg class="i dm-chev"><use href="#i-right" /></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="dine-switch" id="dine-switch">
+                  <button class="on">堂食</button>
+                  <button>外卖</button>
+                </div>
+              </div>
+
+              <div class="menu-main">
+                <div class="sidebar" id="sidebar">
+                  <div class="cat on" data-cat="wz">
+                    <span class="ntag">NEW</span>
+                    王炸新品
+                  </div>
+                  <div class="cat" data-cat="hd">
+                    <span class="ntag hot">HOT</span>
+                    店内活动
+                  </div>
+                  <div class="cat" data-cat="sz">生炸出击</div>
+                  <div class="cat" data-cat="xs">美味小食</div>
+                  <div class="cat" data-cat="xc">生炸鲜蔬</div>
+                  <div class="cat" data-cat="jj">鸡架搭子</div>
+                  <div class="cat" data-cat="cg">叉骨搭子</div>
+                  <div class="cat" data-cat="cn">脆嫩出击</div>
+                  <div class="cat" data-cat="tp">甜品饮料</div>
+                </div>
+
+                <div class="products">
+                  <!-- 热销 3 列横滑 -->
+                  <div class="hot-row">
+                    <div class="hot-card">
+                      <div class="im g-green"><span class="em">🍗</span></div>
+                      <div class="tag">热销</div>
+                      <div class="nm">元气春味</div>
+                      <div class="bot">
+                        <span class="pr"><span class="sym">¥</span>26.8</span>
+                        <button class="add-rd">
+                          <svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg>
+                        </button>
+                      </div>
+                    </div>
+                    <div class="hot-card">
+                      <div class="im g-pink"><span class="em">🍤</span></div>
+                      <div class="tag">热销</div>
+                      <div class="nm">春日食光</div>
+                      <div class="bot">
+                        <span class="pr"><span class="sym">¥</span>29.8</span>
+                        <button class="add-rd">
+                          <svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg>
+                        </button>
+                      </div>
+                    </div>
+                    <div class="hot-card">
+                      <div class="im g-red"><span class="em">🍖</span></div>
+                      <div class="tag off">第二件 8 折</div>
+                      <div class="nm">掌中宝(鸡...</div>
+                      <div class="bot">
+                        <span class="pr"><span class="sym">¥</span>22.9</span>
+                        <button class="add-rd">
+                          <svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 活动 Banner -->
+                  <div class="act-banner">
+                    <div class="txt">
+                      <div class="l1">储值 88 元送 88 折权益卡</div>
+                      <div class="l2">一口春意 · 满格活力</div>
+                    </div>
+                    <div class="em">🥡</div>
+                  </div>
+
+                  <!-- 王炸新品 分类标题 + 商品 -->
+                  <div class="sec-title" data-cat="wz">
+                    王炸新品 <span class="cnt">· 6 件</span>
+                  </div>
+
+                  <div class="pd">
+                    <div class="im g-red">
+                      <span class="badge">暖心芝士</span>
+                      <span class="em">🍟</span>
+                    </div>
+                    <div class="info">
+                      <div>
+                        <div class="ttl">
+                          <span class="nm">【限时尝鲜】- 暖心芝士</span>
+                          <span class="new-tag">新品</span>
+                        </div>
+                        <div class="ds">雪花芝士薯条 (190g) + 雪花芝士球 × 3</div>
+                      </div>
+                      <div class="row">
+                        <div class="pr">
+                          <span class="cur"><span class="sym">¥</span><span class="num">11.9</span></span>
+                          <span class="orig">¥16.8</span>
+                        </div>
+                        <button class="add">
+                          <svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="pd">
+                    <div class="im g-red">
+                      <span class="em">🍟</span>
+                    </div>
+                    <div class="info">
+                      <div>
+                        <div class="ttl">
+                          <span class="nm">【限时尝鲜】- 雪花芝士条</span>
+                          <span class="new-tag">新品</span>
+                          <span class="coupon-tag">券 -¥3</span>
+                        </div>
+                        <div class="ds">金黄外酥 · 拉丝芝士 · 外带首选</div>
+                      </div>
+                      <div class="row">
+                        <div class="pr">
+                          <span class="cur"><span class="sym">¥</span><span class="num">9.9</span></span>
+                          <span class="orig">¥13</span>
+                        </div>
+                        <button class="add">
+                          <svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="pd">
+                    <div class="im g-amber">
+                      <span class="em">🍗</span>
+                    </div>
+                    <div class="info">
+                      <div>
+                        <div class="ttl">
+                          <span class="nm">掌中宝 (鸡膝软骨) 250g</span>
+                        </div>
+                        <div class="ds">香辣脆嫩 · 下酒神器</div>
+                        <div class="tags">
+                          <span class="tg">月售 8.2k</span>
+                          <span class="tg">好评 99%</span>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="pr plain">
+                          <span class="cur"><span class="sym">¥</span><span class="num">22.9</span></span>
+                        </div>
+                        <div class="stp">
+                          <button class="mi">
+                            <svg class="i ix" style="stroke-width: 2.5"><use href="#i-minus" /></svg>
+                          </button>
+                          <span class="q">1</span>
+                          <button class="pl">
+                            <svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="sec-title" data-cat="hd">
+                    店内活动 <span class="cnt">· 4 件</span>
+                  </div>
+
+                  <div class="pd">
+                    <div class="im g-forest">
+                      <span class="em">🥗</span>
+                    </div>
+                    <div class="info">
+                      <div>
+                        <div class="ttl">
+                          <span class="nm">雪花芝士薯条 (190g)</span>
+                        </div>
+                        <div class="ds">会员专享 · 咸甜双拼</div>
+                      </div>
+                      <div class="row">
+                        <div class="pr">
+                          <span class="cur"><span class="sym">¥</span><span class="num">19.8</span></span>
+                          <span class="orig">¥24</span>
+                        </div>
+                        <button class="add">
+                          <svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="pd">
+                    <div class="im g-cream">
+                      <span class="em">🍔</span>
+                    </div>
+                    <div class="info">
+                      <div>
+                        <div class="ttl">
+                          <span class="nm">藤椒鸡腿堡单人餐</span>
+                        </div>
+                        <div class="ds">鸡腿堡 + 薯条 + 可乐</div>
+                      </div>
+                      <div class="row">
+                        <div class="pr">
+                          <span class="cur"><span class="sym">¥</span><span class="num">28.9</span></span>
+                          <span class="orig">¥35</span>
+                        </div>
+                        <button class="add">
+                          <svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="sec-title" data-cat="sz">生炸出击 <span class="cnt">· 5 件</span></div>
+                  <div class="pd">
+                    <div class="im g-amber"><span class="em">🍗</span></div>
+                    <div class="info">
+                      <div>
+                        <div class="ttl"><span class="nm">黄金炸鸡腿</span></div>
+                        <div class="ds">外酥里嫩 · 现炸现卖</div>
+                      </div>
+                      <div class="row">
+                        <div class="pr plain"><span class="cur"><span class="sym">¥</span><span class="num">15.9</span></span></div>
+                        <button class="add"><svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg></button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="pd">
+                    <div class="im g-red"><span class="em">🍗</span></div>
+                    <div class="info">
+                      <div>
+                        <div class="ttl"><span class="nm">香辣炸鸡翅</span></div>
+                        <div class="ds">秘制腌料 · 香辣过瘾</div>
+                      </div>
+                      <div class="row">
+                        <div class="pr plain"><span class="cur"><span class="sym">¥</span><span class="num">12.9</span></span></div>
+                        <button class="add"><svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg></button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="sec-title" data-cat="xs">美味小食 <span class="cnt">· 6 件</span></div>
+                  <div class="pd">
+                    <div class="im g-cream"><span class="em">🍟</span></div>
+                    <div class="info">
+                      <div>
+                        <div class="ttl"><span class="nm">黄金薯角</span></div>
+                        <div class="ds">带皮土豆 · 蘸酱更香</div>
+                      </div>
+                      <div class="row">
+                        <div class="pr plain"><span class="cur"><span class="sym">¥</span><span class="num">9.9</span></span></div>
+                        <button class="add"><svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg></button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="pd">
+                    <div class="im g-amber"><span class="em">🧅</span></div>
+                    <div class="info">
+                      <div>
+                        <div class="ttl"><span class="nm">黄金洋葱圈</span></div>
+                        <div class="ds">酥脆金黄 · 一口一个</div>
+                      </div>
+                      <div class="row">
+                        <div class="pr plain"><span class="cur"><span class="sym">¥</span><span class="num">10.9</span></span></div>
+                        <button class="add"><svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg></button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="sec-title" data-cat="xc">生炸鲜蔬 <span class="cnt">· 4 件</span></div>
+                  <div class="pd">
+                    <div class="im g-forest"><span class="em">🍄</span></div>
+                    <div class="info">
+                      <div>
+                        <div class="ttl"><span class="nm">椒盐炸蘑菇</span></div>
+                        <div class="ds">鲜嫩多汁 · 椒盐风味</div>
+                      </div>
+                      <div class="row">
+                        <div class="pr plain"><span class="cur"><span class="sym">¥</span><span class="num">11.9</span></span></div>
+                        <button class="add"><svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg></button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="pd">
+                    <div class="im g-cream"><span class="em">🥬</span></div>
+                    <div class="info">
+                      <div>
+                        <div class="ttl"><span class="nm">脆炸藕盒</span></div>
+                        <div class="ds">夹心肉馅 · 外脆内嫩</div>
+                      </div>
+                      <div class="row">
+                        <div class="pr plain"><span class="cur"><span class="sym">¥</span><span class="num">13.9</span></span></div>
+                        <button class="add"><svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg></button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="sec-title" data-cat="jj">鸡架搭子 <span class="cnt">· 3 件</span></div>
+                  <div class="pd">
+                    <div class="im g-red"><span class="em">🍗</span></div>
+                    <div class="info">
+                      <div>
+                        <div class="ttl"><span class="nm">香辣鸡架</span></div>
+                        <div class="ds">下酒神器 · 越啃越香</div>
+                      </div>
+                      <div class="row">
+                        <div class="pr plain"><span class="cur"><span class="sym">¥</span><span class="num">16.9</span></span></div>
+                        <button class="add"><svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg></button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="pd">
+                    <div class="im g-amber"><span class="em">🍗</span></div>
+                    <div class="info">
+                      <div>
+                        <div class="ttl"><span class="nm">椒麻鸡架</span></div>
+                        <div class="ds">藤椒鲜香 · 麻而不辣</div>
+                      </div>
+                      <div class="row">
+                        <div class="pr plain"><span class="cur"><span class="sym">¥</span><span class="num">16.9</span></span></div>
+                        <button class="add"><svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg></button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="sec-title" data-cat="cg">叉骨搭子 <span class="cnt">· 3 件</span></div>
+                  <div class="pd">
+                    <div class="im g-amber"><span class="em">🍖</span></div>
+                    <div class="info">
+                      <div>
+                        <div class="ttl"><span class="nm">盐酥叉骨</span></div>
+                        <div class="ds">咸香酥脆 · 嚼劲十足</div>
+                      </div>
+                      <div class="row">
+                        <div class="pr plain"><span class="cur"><span class="sym">¥</span><span class="num">18.9</span></span></div>
+                        <button class="add"><svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg></button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="pd">
+                    <div class="im g-cream"><span class="em">🍖</span></div>
+                    <div class="info">
+                      <div>
+                        <div class="ttl"><span class="nm">蒜香叉骨</span></div>
+                        <div class="ds">浓郁蒜香 · 停不下嘴</div>
+                      </div>
+                      <div class="row">
+                        <div class="pr plain"><span class="cur"><span class="sym">¥</span><span class="num">18.9</span></span></div>
+                        <button class="add"><svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg></button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="sec-title" data-cat="cn">脆嫩出击 <span class="cnt">· 4 件</span></div>
+                  <div class="pd">
+                    <div class="im g-cream"><span class="em">🍗</span></div>
+                    <div class="info">
+                      <div>
+                        <div class="ttl"><span class="nm">脆皮鸡柳</span></div>
+                        <div class="ds">整条鸡胸 · 外脆里嫩</div>
+                      </div>
+                      <div class="row">
+                        <div class="pr plain"><span class="cur"><span class="sym">¥</span><span class="num">14.9</span></span></div>
+                        <button class="add"><svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg></button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="pd">
+                    <div class="im g-amber"><span class="em">🍿</span></div>
+                    <div class="info">
+                      <div>
+                        <div class="ttl"><span class="nm">黄金鸡米花</span></div>
+                        <div class="ds">一口一个 · 追剧必备</div>
+                      </div>
+                      <div class="row">
+                        <div class="pr plain"><span class="cur"><span class="sym">¥</span><span class="num">12.9</span></span></div>
+                        <button class="add"><svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg></button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="sec-title" data-cat="tp">甜品饮料 <span class="cnt">· 5 件</span></div>
+                  <div class="pd">
+                    <div class="im g-plum"><span class="em">🥭</span></div>
+                    <div class="info">
+                      <div>
+                        <div class="ttl"><span class="nm">杨枝甘露</span></div>
+                        <div class="ds">芒果西柚 · 清爽不腻</div>
+                      </div>
+                      <div class="row">
+                        <div class="pr plain"><span class="cur"><span class="sym">¥</span><span class="num">13.9</span></span></div>
+                        <button class="add"><svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg></button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="pd">
+                    <div class="im g-forest"><span class="em">🍋</span></div>
+                    <div class="info">
+                      <div>
+                        <div class="ttl"><span class="nm">鲜萃柠檬茶</span></div>
+                        <div class="ds">手打鲜柠 · 生津解腻</div>
+                      </div>
+                      <div class="row">
+                        <div class="pr plain"><span class="cur"><span class="sym">¥</span><span class="num">8.9</span></span></div>
+                        <button class="add"><svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg></button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="end-hint"><span>我是有底线的</span></div>
+                </div>
+              </div>
+
+              <!-- 吸底购物车：红购物袋 + 金额 + 结算 -->
+              <div class="cart">
+                <div class="cart-row">
+                  <button class="cart-bag" onclick="toggleSheet()">
+                    <svg class="bag-ic" viewBox="0 0 32 32">
+                      <use href="#i-bag" />
+                    </svg>
+                    <span class="bd">2</span>
+                  </button>
+                  <div class="cart-mid">
+                    <div class="pr">
+                      <span class="sym">¥</span>
+                      <span class="num">34.80</span>
+                    </div>
+                    <div class="saved">已优惠 ¥ 4.90</div>
+                  </div>
+                  <button class="cart-cta" id="cart-cta" onclick="onCheckout()">
+                    <span class="cta-txt">去结算</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 购物车半屏弹层 §6：保留浮现动效，叠加工具条/优惠券/卡片化/折扣 footer -->
+              <div class="sheet-wrap" id="cart-sheet">
+                <div class="mask" onclick="toggleSheet()"></div>
+                <div class="sheet tall">
+                  <div class="sheet-hd">
+                    <div class="t">购物车 · 2 件</div>
+                    <!-- 【整改 §6.6】顶部工具条：全选 + 清空 -->
+                    <div class="cart-tools">
+                      <button class="sel-all on" onclick="toggleSelAll(this)">
+                        <span class="ck-mini"><svg class="i ix" style="stroke-width: 3"><use href="#i-check" /></svg></span>
+                        全选
+                      </button>
+                      <button class="clr">
+                        <svg class="i ix"><use href="#i-refresh" /></svg>
+                        清空
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- 【整改 §6.6 / §6.8】已享折扣条 -->
+                  <div class="cart-discount">
+                    <svg class="i ix"><use href="#i-ticket" /></svg>
+                    已享折扣优惠，共减免 <b>¥4.90</b>
+                  </div>
+
+                  <!-- 【整改 §6.7】优惠券入口 -->
+                  <div class="cart-coupon">
+                    <span class="cc-left">
+                      <svg class="i ix"><use href="#i-ticket" /></svg>
+                      优惠券
+                    </span>
+                    <span class="cc-right">
+                      2 张可用
+                      <svg class="i ix"><use href="#i-right" /></svg>
+                    </span>
+                  </div>
+
+                  <!-- 【整改 §6.9】商品行卡片化（由真实购物车状态渲染） -->
+                  <div class="sheet-bd"></div>
+
+                  <!-- 【整改 §6.8】折扣价 footer -->
+                  <div class="cart-foot">
+                    <div class="cf-price">
+                      <div class="line1">
+                        <span class="cnt">共 2 件</span> 实付
+                        <span class="sym">¥</span><span class="num">34.80</span>
+                      </div>
+                      <div class="line2">已享折扣 -¥4.90</div>
+                    </div>
+                    <button class="cf-cta" onclick="onCheckout()">去结算</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 【整改 §4】选规格弹窗（§4.1 数量角标白色分界线） -->
+              <div class="sheet-wrap" id="spec-sheet">
+                <div class="mask" onclick="hideSheet('spec-sheet')"></div>
+                <div class="sheet">
+                  <div class="spec-hd">
+                    <div class="spec-im g-red"><span class="em">🍟</span></div>
+                    <div class="spec-meta">
+                      <div class="nm">【限时尝鲜】- 暖心芝士</div>
+                      <div class="pr">
+                        <span class="cur"><span class="sym">¥</span><span class="num">11.9</span></span>
+                        <span class="orig">¥16.8</span>
+                      </div>
+                    </div>
+                    <button class="spec-close" onclick="hideSheet('spec-sheet')">
+                      <svg class="i is" style="stroke-width: 2.5"><use href="#i-close" /></svg>
+                    </button>
+                  </div>
+                  <div class="spec-bd">
+                    <div class="sg">
+                      <div class="hd"><div class="t">份量<span class="need">（任选 1 份）</span></div></div>
+                      <div class="opts">
+                        <button class="opt">小份</button>
+                        <button class="opt on">
+                          标准份
+                          <span class="qbadge">3</span>
+                        </button>
+                        <button class="opt">大份</button>
+                      </div>
+                    </div>
+                    <div class="sg">
+                      <div class="hd"><div class="t">口味<span class="need">（任选 1 份）</span></div></div>
+                      <div class="opts">
+                        <button class="opt on">原味</button>
+                        <button class="opt">香辣</button>
+                        <button class="opt">藤椒</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="spec-ft">
+                    <div class="tot"><span class="sym">¥</span><span class="num">35.7</span></div>
+                    <div class="stp">
+                      <button class="mi"><svg class="i ix" style="stroke-width: 2.5"><use href="#i-minus" /></svg></button>
+                      <span class="q">3</span>
+                      <button class="pl"><svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg></button>
+                    </div>
+                    <button class="spec-add" onclick="addSpecToCart()">加入购物车</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 【§7.1 ⛔ 作废 · 仅示意 mock】点单页实际无切换弹窗，点门店行跳转独立「选择门店」页 choose-shop；此 sheet 仅作门店卡片视觉示意 -->
+              <div class="sheet-wrap" id="store-sheet">
+                <div class="mask" onclick="hideSheet('store-sheet')"></div>
+                <div class="sheet tall">
+                  <div class="sheet-hd">
+                    <div class="t">选择门店</div>
+                    <button class="spec-close" onclick="hideSheet('store-sheet')">
+                      <svg class="i is" style="stroke-width: 2.5"><use href="#i-close" /></svg>
+                    </button>
+                  </div>
+                  <div class="sheet-bd store-bd">
+                    <div class="store-grp">
+                      <div class="store-grp-t">
+                        <svg class="i ix heart-fill"><use href="#i-heart" /></svg>
+                        我的收藏
+                      </div>
+                      <div class="store-card on" onclick="pickStore(this)">
+                        <div class="sc-main">
+                          <div class="sc-top">
+                            <span class="sc-nm">上海静安大宁久光中心店</span>
+                            <span class="sc-tag">营业中</span>
+                          </div>
+                          <div class="sc-addr">静安区大宁路 1518 号久光中心 B1</div>
+                          <div class="sc-dist"><svg class="i ix"><use href="#i-loc" /></svg> 距您 2.4km</div>
+                        </div>
+                        <svg class="i sc-check"><use href="#i-check" /></svg>
+                      </div>
+                    </div>
+                    <div class="store-grp">
+                      <div class="store-grp-t">附近门店</div>
+                      <div class="store-card" onclick="pickStore(this)">
+                        <div class="sc-main">
+                          <div class="sc-top">
+                            <span class="sc-nm">上海中山公园龙之梦店</span>
+                            <span class="sc-tag">营业中</span>
+                          </div>
+                          <div class="sc-addr">长宁区长宁路 1018 号龙之梦 5F</div>
+                          <div class="sc-dist"><svg class="i ix"><use href="#i-loc" /></svg> 距您 3.8km</div>
+                        </div>
+                        <svg class="i sc-check"><use href="#i-check" /></svg>
+                      </div>
+                      <div class="store-card" onclick="pickStore(this)">
+                        <div class="sc-main">
+                          <div class="sc-top">
+                            <span class="sc-nm">上海徐家汇美罗城店</span>
+                            <span class="sc-tag rest">休息中</span>
+                          </div>
+                          <div class="sc-addr">徐汇区肇嘉浜路 1111 号美罗城 4F</div>
+                          <div class="sc-dist"><svg class="i ix"><use href="#i-loc" /></svg> 距您 6.1km</div>
+                        </div>
+                        <svg class="i sc-check"><use href="#i-check" /></svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 底部 5-tab -->
+              <nav class="tab-bar">
+                <button class="tab-bar-item">
+                  <svg class="i tbi"><use href="#i-home" /></svg>
+                  <span>首页</span>
+                </button>
+                <button class="tab-bar-item on">
+                  <svg class="i tbi"><use href="#i-menu" /></svg>
+                  <span>点单</span>
+                </button>
+                <button class="tab-bar-item">
+                  <svg class="i tbi"><use href="#i-vip" /></svg>
+                  <span>会员专区</span>
+                </button>
+                <button class="tab-bar-item">
+                  <svg class="i tbi"><use href="#i-receipt" /></svg>
+                  <span>订单</span>
+                </button>
+                <button class="tab-bar-item">
+                  <svg class="i tbi"><use href="#i-user" /></svg>
+                  <span>我的</span>
+                </button>
+              </nav>
+            </section>
+
+            <!-- ============== 商品详情 ============== -->
+            <section class="page" id="page-goods">
+              <div class="status-bar">
+                <span>17:15</span>
+                <span class="icons">
+                  <svg class="i is" style="stroke-width: 0"><use href="#i-signal" /></svg>
+                  <svg class="i is"><use href="#i-wifi" /></svg>
+                  <svg class="i is" style="stroke-width: 0"><use href="#i-battery" /></svg>
+                </span>
+              </div>
+
+              <div class="gd-body">
+                <div class="gd-hero">
+                  <div class="top-act">
+                    <button class="back-btn" onclick="switchPage('menu')">
+                      <svg class="i is" style="stroke-width: 2.5"><use href="#i-back" /></svg>
+                    </button>
+                    <div class="mini-cap">
+                      <svg><use href="#i-ellipsis" /></svg>
+                      <svg><use href="#i-circle" /></svg>
+                    </div>
+                  </div>
+                  <div class="pour">🍵</div>
+                  <button class="share-fab" title="分享 · 生成美图">
+                    <svg class="i is"><use href="#i-share" /></svg>
+                  </button>
+                  <div class="cal">每杯约 <b>128 kcal</b> · 低卡</div>
+                </div>
+
+                <div class="gd-intro">
+                  <div class="nm">茉莉蜜茶</div>
+                  <span class="cat-chip">含茶</span>
+                  <div class="ds">
+                    采用<em>广西横县茉莉绿茶</em>，<em>五次窨制</em>而成，茶香清新，口感香甜。
+                  </div>
+                </div>
+
+                <div class="sg">
+                  <div class="hd">
+                    <div class="t">加料<span class="selnum">(已选 1 / 3)</span></div>
+                    <div class="scroll-tip">
+                      <svg class="i ix"><use href="#i-up" /></svg>
+                      上滑调整口味
+                    </div>
+                  </div>
+                  <div class="addons">
+                    <div class="addon">脆波波（限冷饮）+¥1</div>
+                    <div class="addon on">
+                      <button class="stp-btn sub">
+                        <svg class="i ix" style="stroke-width: 2.5"><use href="#i-minus" /></svg>
+                      </button>
+                      <span class="nm">椰果 +¥1</span>
+                      <button class="stp-btn">
+                        <svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg>
+                      </button>
+                      <span class="bd">3</span>
+                    </div>
+                    <div class="addon">黑糖珍珠 +¥1</div>
+                    <div class="addon">黑糖冻 +¥1</div>
+                    <div class="addon">芋圆 +¥2</div>
+                  </div>
+                </div>
+
+                <div class="sg">
+                  <div class="hd">
+                    <div class="t">规格<span class="need">（任选 1 份）</span></div>
+                  </div>
+                  <div class="opts">
+                    <button class="opt on">大杯</button>
+                  </div>
+                </div>
+
+                <div class="sg">
+                  <div class="hd">
+                    <div class="t">免费选料<span class="need">（任选 1 份）</span></div>
+                  </div>
+                  <div class="opts">
+                    <button class="opt on">
+                      <svg class="i ix star"><use href="#i-star" /></svg>
+                      纯茶
+                    </button>
+                    <button class="opt">黑糖珍珠</button>
+                    <button class="opt">椰果</button>
+                  </div>
+                </div>
+
+                <div class="sg">
+                  <div class="hd">
+                    <div class="t">温度选择<span class="need">（任选 1 份）</span></div>
+                  </div>
+                  <div class="opts">
+                    <button class="opt on">
+                      <svg class="i ix star"><use href="#i-star" /></svg>
+                      正常冰
+                    </button>
+                    <button class="opt">少冰</button>
+                    <button class="opt">去冰</button>
+                  </div>
+                </div>
+
+                <div class="sg">
+                  <div class="hd">
+                    <div class="t">甜度<span class="need">（任选 1 份）</span></div>
+                  </div>
+                  <div class="opts">
+                    <button class="opt">无糖</button>
+                    <button class="opt">三分甜</button>
+                    <button class="opt on">
+                      <svg class="i ix star"><use href="#i-star" /></svg>
+                      标准糖
+                    </button>
+                    <button class="opt">七分甜</button>
+                    <button class="opt">全糖</button>
+                  </div>
+                </div>
+
+                <div style="height: var(--sp-4); background: #fff"></div>
+              </div>
+
+              <!-- 底部双层栏：上行价格+步进器 / 下行恢复默认+加入购物车 -->
+              <div class="gd-ft">
+                <div class="top-row">
+                  <div class="tot">
+                    <div class="pr">
+                      <span class="sym">¥</span>
+                      <span class="num">7</span>
+                    </div>
+                    <div class="brief">大杯; 纯茶; 正常冰; 标准糖; 椰果 +×3</div>
+                  </div>
+                  <div class="stp">
+                    <button class="mi">
+                      <svg class="i ix" style="stroke-width: 2.5"><use href="#i-minus" /></svg>
+                    </button>
+                    <span class="q">1</span>
+                    <button class="pl">
+                      <svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="bot-row">
+                  <button class="rs">
+                    <svg class="i is"><use href="#i-refresh" /></svg>
+                    恢复默认
+                  </button>
+                  <button class="add">加入购物车</button>
+                </div>
+              </div>
+            </section>
+
+            <!-- ============== 结算页 ============== -->
+            <section class="page" id="page-checkout">
+              <div class="co-hero">
+                <div class="status-bar light">
+                  <span>9:41</span>
+                  <span class="icons">
+                    <svg class="i is" style="stroke-width: 0"><use href="#i-signal" /></svg>
+                    <svg class="i is"><use href="#i-wifi" /></svg>
+                    <svg class="i is" style="stroke-width: 0"><use href="#i-battery" /></svg>
+                  </span>
+                </div>
+                <div class="top-act">
+                  <button class="back" onclick="switchPage('menu')">
+                    <svg class="i"><use href="#i-back" /></svg>
+                  </button>
+                  <div class="mini-cap">
+                    <svg><use href="#i-ellipsis" /></svg>
+                    <svg><use href="#i-circle" /></svg>
+                  </div>
+                </div>
+                <div class="info">
+                  <div class="name-row">
+                    <div class="nm">上海静安大宁久光中心店</div>
+                    <div class="dist">
+                      <svg class="i ix"><use href="#i-loc" /></svg>
+                      距离您 2.4km
+                    </div>
+                  </div>
+                  <div class="addr">上海市静安区共和新路 2188 号 B2 层 MB216-02 室</div>
+                  <button class="switch">
+                    切换门店
+                    <svg class="i ix" style="stroke-width: 2.5"><use href="#i-right" /></svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="co-body">
+                <!-- 取餐方式：大卡片 Tab -->
+                <div class="card pickup-card">
+                  <div class="pickup-tabs">
+                    <button class="pickup-tab on">
+                      <span class="t">堂食</span>
+                      <span class="s">店内就餐</span>
+                    </button>
+                    <button class="pickup-tab">
+                      <span class="t">自取</span>
+                      <span class="s">打包带走</span>
+                    </button>
+                  </div>
+                  <div class="pickup-time">
+                    <span class="l">取餐时间</span>
+                    <span class="r">
+                      立即取餐 · <span class="eta-num">10</span> 分钟
+                      <svg class="i ix ar"><use href="#i-right" /></svg>
+                    </span>
+                  </div>
+                </div>
+
+                <!-- 商品清单 + 金额明细 -->
+                <div class="card">
+                  <div class="order-list">
+                    <div class="oi">
+                      <div class="im g-red"><span class="em">🍗</span></div>
+                      <div class="info">
+                        <div class="n">掌中宝（鸡膝软骨）(250g)</div>
+                        <div class="qty">1 份</div>
+                      </div>
+                      <div class="pr"><span class="sym">¥</span>22.9</div>
+                    </div>
+                    <div class="oi">
+                      <div class="im g-amber"><span class="em">🍟</span></div>
+                      <div class="info">
+                        <div class="n">雪花芝士薯条 (190g)</div>
+                        <div class="qty">2 份</div>
+                      </div>
+                      <div class="pr"><span class="sym">¥</span>19.8</div>
+                    </div>
+                    <!-- 【整改增量】3 件后折叠 -->
+                    <div class="fold-wrap">
+                      <button class="fold-btn">
+                        展开剩余 1 件
+                        <svg class="i ix"><use href="#i-down" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="amt-row">
+                    <span class="lb">商品金额</span>
+                    <span class="vl">¥ 42.7</span>
+                  </div>
+                  <div class="amt-row">
+                    <span class="lb">
+                      <span class="icon-cp">券</span>
+                      优惠券
+                    </span>
+                    <span class="vl">
+                      <span class="save">- ¥ 1.15</span>
+                      <svg class="i ix ar"><use href="#i-right" /></svg>
+                    </span>
+                  </div>
+                  <div class="amt-row">
+                    <span class="lb">备注</span>
+                    <span class="vl">
+                      <span class="ph">口味、包装等要求</span>
+                      <svg class="i ix ar"><use href="#i-right" /></svg>
+                    </span>
+                  </div>
+                  <div class="sum-row">
+                    <span class="sv">共优惠 ¥1.15</span>
+                    <span class="right">
+                      <span class="cnt">共 3 件，合计</span>
+                      <span class="total">¥ 41.55</span>
+                    </span>
+                  </div>
+                </div>
+
+                <!-- 超值换购：带红三角角标（忠实现状）+ 横滑（整改降权） -->
+                <div class="card swap-card">
+                  <div class="corner">
+                    <div class="bg"></div>
+                    <div class="txt">超值换购</div>
+                  </div>
+                  <div class="ttl">以下商品可享超值换购，不要错过哦！</div>
+                  <div class="sub">+¥5 起 · 近 7 天 2.3k 人已换购</div>
+                  <div class="scroll">
+                    <div class="sw-it">
+                      <div class="im g-pink"><span class="em">🍓</span></div>
+                      <div class="n">草莓奶昔</div>
+                      <div class="pr">+¥9</div>
+                    </div>
+                    <div class="sw-it">
+                      <div class="im g-mint"><span class="em">🍵</span></div>
+                      <div class="n">抹茶布丁</div>
+                      <div class="pr">+¥6</div>
+                    </div>
+                    <div class="sw-it">
+                      <div class="im g-peach"><span class="em">🍑</span></div>
+                      <div class="n">蜜桃乌龙</div>
+                      <div class="pr">+¥7</div>
+                    </div>
+                    <div class="sw-it">
+                      <div class="im g-cream"><span class="em">🍪</span></div>
+                      <div class="n">焦糖曲奇</div>
+                      <div class="pr">+¥5</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 支付方式：折叠单行（整改：从全展开改为单行） -->
+                <div class="card">
+                  <div class="pay-collapsed">
+                    <div class="l">
+                      <span class="ic wx">微信</span>
+                      <span class="sel-name">微信支付</span>
+                    </div>
+                    <svg class="i ix ar"><use href="#i-right" /></svg>
+                  </div>
+                </div>
+
+                <!-- 发票/会员权益入口行 -->
+                <div class="card">
+                  <div class="amt-row">
+                    <span class="lb">发票</span>
+                    <span class="vl">
+                      <span class="ph">点击申请</span>
+                      <svg class="i ix ar"><use href="#i-right" /></svg>
+                    </span>
+                  </div>
+                  <div class="amt-row">
+                    <span class="lb">会员权益</span>
+                    <span class="vl">
+                      SVIP 享 9 折
+                      <svg class="i ix ar"><use href="#i-right" /></svg>
+                    </span>
+                  </div>
+                </div>
+
+                <div style="text-align:center;font-size:var(--fs-tiny);color:var(--text-disabled);padding:var(--sp-2) 0;">
+                  提交即视为同意
+                  <span style="color:var(--text-tertiary)">《用户服务协议》</span>
+                </div>
+              </div>
+
+              <div class="ft-bar">
+                <div class="tot">
+                  <div class="pr">
+                    <span class="sym">¥</span>
+                    <span class="num">41.55</span>
+                  </div>
+                  <div class="saved">共优惠 ¥ 1.15</div>
+                </div>
+                <button class="pay-btn">去支付</button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </main>
+
+      <aside class="panel">
+        <h2>整改点清单 · v5</h2>
+        <div class="note" data-page="menu">
+          <b>v5 同步 PRD v3：每条标注「后台同步」状态</b>（详见 PRD §13 与 §0.4）。点单页对齐 §1–§9；现状骨架上增量补齐所有可视项，纯逻辑 / 动效 / bug 项标「逻辑项·见 PRD」。所有颜色 / 字号 / 圆角走 CSS 变量，6 主色主题可实时切换。
+        </div>
+
+        <div class="it-legend" data-page="menu">
+          <span class="lg-t">后台同步标签：</span>
+          <span class="it-tag t-fe">🔧 前端</span>
+          <span class="it-tag t-schema">🗄 schema</span>
+          <span class="it-tag t-api">🔌 API</span>
+        </div>
+
+        <!-- 状态演示：互斥态无法同屏并存，集中在此切换 -->
+        <div class="demo-ctrl" data-page="menu">
+          <div class="dc-t">🎬 状态演示（互斥态切换）</div>
+          <div class="dc-row">
+            <span class="dc-label">制作中</span>
+            <span class="seg" data-seg="making">
+              <button data-val="none" onclick="setMaking('none')">暂无</button>
+              <button data-val="busy" class="on" onclick="setMaking('busy')">制作中</button>
+              <button data-val="peak" onclick="setMaking('peak')">高峰</button>
+            </span>
+          </div>
+          <div class="dc-row">
+            <span class="dc-label">结算态</span>
+            <span class="seg" data-seg="checkout">
+              <button data-val="on" class="on" onclick="setCheckout(true)">可结算</button>
+              <button data-val="off" onclick="setCheckout(false)">不可结算</button>
+            </span>
+          </div>
+          <div class="dc-hint">
+            顶部门店爱心、制作中状态栏均可直接点击切换；点门店行打开门店 sheet（⛔ 仅示意 mock，实际为跳转独立「选择门店」页），点首个商品 + 号打开选规格弹窗。
+          </div>
+        </div>
+
+        <!-- v5：CMS / 后台同步影响（同步 PRD §13） -->
+        <details class="cms-risks-block" data-page="menu" open>
+          <summary>
+            ⚠️ CMS / 后台同步影响
+            <span class="c">见 PRD §13</span>
+          </summary>
+          <div class="cms-risks">
+            <div class="risk r-arch">
+              <b>① 主题色桥接（架构债，先做）</b>
+              <em>双路径架构：构建期 <code>$primary</code> 写死 vs 后台 <code>brand.themeColor</code>。legacy MenuBase 路径下所有 <code>var(--primary)</code> 不响应后台，PRD 里所有"颜色跟主题"验收点都失效。需先把 <code>themeColor</code> 注入 <code>:root --primary</code>（含 RGB 派生），再启动 P0/P1 整改。详见 PRD §13.4</em>
+            </div>
+            <div class="risk r-schema">
+              <b>② 需扩 CMS schema（7 项确定 + 5 项可能）</b>
+              <em>确定扩：§2.4 加购红点 / §2.6 横向分类 / §3.6 加车动画 / §1.5 制作中（含制作进度条动画 · 落地嵌入门店行偏离现有 Schedule schema）/ §8.1 弹框频控（仅 B2 兜底走 schema）/ §3.5 二级分类。可能扩：§1.2 §2.5 §5.4 §9.2 §1.4 隐藏开关</em>
+            </div>
+            <div class="risk r-api">
+              <b>③ 需后端 API（3 项）</b>
+              <em>§1.4 收藏门店：UserFavoriteStore(user_id, store_id, brand_id) + CRUD；§3.5 二级分类：商品分类接口加 parentCategoryId；§8.1 弹框频控（B1 推荐·对标霸王茶姬）：AdExposure(user_id, scene, ad_id) + 广告接口按"用户×场景×已曝光"过滤下发 + 曝光上报接口</em>
+            </div>
+            <div class="risk r-fe">
+              <b>④ 双路径都得改</b>
+              <em>CmsMenu（模板驱动）和 Legacy MenuBase（降级硬编码）必须两条都落地；只动一条，另一条降级品牌看不到效果。详见 PRD §13.6</em>
+            </div>
+          </div>
+        </details>
+
+        <!-- 点单页清单：按 PRD §1–§9 拆 9 节，重构/新增 sheet 在标题里标出 -->
+        <details data-page="menu" open>
+          <summary>§1 顶部区域 <span class="c"><span class="done" data-counter="c1-1">0</span> / 5</span></summary>
+          <div class="its" data-group="c1-1">
+            <div class="it"><input type="checkbox" id="m101" checked /><label for="m101"><b>§1.1 第一行控件统一 32px 胶囊 + 字号 13px</b> <em>(pin / 搜索 / 系统胶囊对齐)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it"><input type="checkbox" id="m102" checked /><label for="m102"><b>§1.2 堂食 / 外卖切换对齐规整</b> <em>(导航栏标题位·左对齐+胶囊化，与系统胶囊两端对齐)</em> <span class="it-tag t-schema">🗄 schema?</span></label></div>
+            <div class="it"><input type="checkbox" id="m103" checked /><label for="m103"><b>§1.3 距离前位置小图标</b> <em>(霸王茶姬做法)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it"><input type="checkbox" id="m104" checked /><label for="m104"><b>§1.4 收藏门店爱心（空心♡ / 实心♥ 跟主题）</b> <em>(可点击切换)</em> <span class="it-tag t-api">🔌 API</span></label></div>
+            <div class="it"><input type="checkbox" id="m105" checked /><label for="m105"><b>§1.5 制作中指示嵌入「距离」行（参考霸王茶姬）</b> <em>(内联 pill 与距离同排 · 数字突出 + 流光进度条 + 三态色阶；店名整名独占一行不被挤)</em> <span class="it-tag t-schema">🗄 schema</span></label></div>
+          </div>
+        </details>
+
+        <details data-page="menu" open>
+          <summary>§2 左侧分类栏 <span class="c"><span class="done" data-counter="c1-2">0</span> / 6</span></summary>
+          <div class="its" data-group="c1-2">
+            <div class="it"><input type="checkbox" id="m201" checked /><label for="m201"><b>§2.1 分类角标统一 + HOT 变体</b> <em>(尺寸/位置一致，NEW 红 / HOT 橙)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it"><input type="checkbox" id="m202" checked /><label for="m202"><b>§2.2 滚动联动高亮（含到底强制高亮最后一类）</b> <em>(P0 bug 已修)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it"><input type="checkbox" id="m203" checked /><label for="m203"><b>§2.3 分类区滚动条隐藏</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it"><input type="checkbox" id="m204" checked /><label for="m204"><b>§2.4 右上角加购数量角标（圆形 14×14 跟主题）</b> <em>(与 NEW 静态角标左右避让共存)</em> <span class="it-tag t-schema">🗄 schema</span></label></div>
+            <div class="it"><input type="checkbox" id="m205" checked /><label for="m205"><b>§2.5 选中态：加粗 + 浅色背景块 + 3px 左竖条</b> <em>(背景/色条跟主题)</em> <span class="it-tag t-schema">🗄 schema?</span></label></div>
+            <div class="it logic"><input type="checkbox" id="m206" /><label for="m206"><b>§2.6 横向分类备选形态</b> <em>(视产品判断)</em> <span class="it-tag t-schema">🗄 schema</span></label></div>
+          </div>
+        </details>
+
+        <details data-page="menu" open>
+          <summary>§3 右侧商品区 <span class="c"><span class="done" data-counter="c1-3">0</span> / 6</span></summary>
+          <div class="its" data-group="c1-3">
+            <div class="it"><input type="checkbox" id="m301" checked /><label for="m301"><b>§3.1 价格层级（无优惠 #333 / 有优惠品牌色 + 原价灰删除线）</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it"><input type="checkbox" id="m302" checked /><label for="m302"><b>§3.2 点击分类平滑滚动定位 + 弹性反馈</b> <em>(取消则瞬跳无动效)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it"><input type="checkbox" id="m303" checked /><label for="m303"><b>§3.3 到底提示「我是有底线的」</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it logic"><input type="checkbox" id="m304" /><label for="m304"><b>§3.4 swiper 圆角抖动修复</b> <em>(P0 视觉 bug)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it logic"><input type="checkbox" id="m305" /><label for="m305"><b>§3.5 二级分类支持</b> <em>(视产品判断)</em> <span class="it-tag t-api">🔌 API+🗄</span></label></div>
+            <div class="it logic"><input type="checkbox" id="m306" /><label for="m306"><b>§3.6 加车飞入抛物线动画</b> <span class="it-tag t-schema">🗄 schema</span></label></div>
+          </div>
+        </details>
+
+        <details data-page="menu" open>
+          <summary>§4 选规格弹窗 <span class="sec-mod">新增 sheet</span> <span class="c"><span class="done" data-counter="c1-4">0</span> / 3</span></summary>
+          <div class="its" data-group="c1-4">
+            <div class="it"><input type="checkbox" id="m400" checked /><label for="m400"><b>§4 选规格弹窗骨架（份量 / 口味 + 价格 footer）</b> <em>(弹窗做法待产品需求跟进：简单 SKU 走弹窗 / 复杂定制走详情页)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it"><input type="checkbox" id="m401" checked /><label for="m401"><b>§4.1 规格数量角标加 2px 白色分界线</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it logic"><input type="checkbox" id="m402" /><label for="m402"><b>§4.2 选规格时底部购物车条闪烁</b> <em>(P0 bug)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
+          </div>
+        </details>
+
+        <details data-page="menu" open>
+          <summary>§5 底部购物车条 <span class="c"><span class="done" data-counter="c1-5">0</span> / 4</span></summary>
+          <div class="its" data-group="c1-5">
+            <div class="it"><input type="checkbox" id="m501" checked /><label for="m501"><b>§5.1 加购数量角标改品牌色</b> <em>(拍板：目标态跟 PRD，非黑色现状)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it"><input type="checkbox" id="m502" checked /><label for="m502"><b>§5.2 购物车 + / 图标与文字基线对齐</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it logic"><input type="checkbox" id="m503" /><label for="m503"><b>§5.3 底部条整条可点展开</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it"><input type="checkbox" id="m504" checked /><label for="m504"><b>§5.4 不可结算 disabled 态（灰化 + 文案变体）</b> <em>(演示开关切换)</em> <span class="it-tag t-schema">🗄 schema?</span></label></div>
+          </div>
+        </details>
+
+        <details data-page="menu" open>
+          <summary>§6 购物车浮层 <span class="sec-mod sec-rebuild">整体重写</span> <span class="c"><span class="done" data-counter="c1-6">0</span> / 8</span></summary>
+          <div class="its" data-group="c1-6">
+            <div class="it"><input type="checkbox" id="m602" checked /><label for="m602"><b>§6.2 每行左侧勾选框</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it logic"><input type="checkbox" id="m603" /><label for="m603"><b>§6.3 左滑删除 + 二次确认</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it logic"><input type="checkbox" id="m604" /><label for="m604"><b>§6.4 清空二次确认</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it"><input type="checkbox" id="m605" checked /><label for="m605"><b>§6.5 多色价格层次（优惠价 / 减免 / 原价）</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it"><input type="checkbox" id="m606" checked /><label for="m606"><b>§6.6 顶部工具条（已享折扣 + 全选 + 清空）</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it"><input type="checkbox" id="m607" checked /><label for="m607"><b>§6.7 优惠券入口</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it"><input type="checkbox" id="m608" checked /><label for="m608"><b>§6.8 顶部 / footer 折扣价显示</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it"><input type="checkbox" id="m609" checked /><label for="m609"><b>§6.9 可视区扩到 ~80% + 商品行卡片化（保留浮现动效）</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
+          </div>
+        </details>
+
+        <details data-page="menu" open>
+          <summary>§7 门店切换弹窗 <span class="sec-mod">⛔ 作废</span> <span class="c"><span class="done" data-counter="c1-7">0</span> / 1</span></summary>
+          <div class="its" data-group="c1-7">
+            <div class="it"><input type="checkbox" id="m701" checked /><label for="m701"><b>§7.1 门店卡片（店名/地址/距离带图标/选中态）+ 我的收藏区</b> <em>(⛔ 作废：点单页无切换弹窗，点门店行跳转独立「选择门店」页 choose-shop；下方 sheet 仅为示意 mock，整体性提升属该页独立需求)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
+          </div>
+        </details>
+
+        <details data-page="menu">
+          <summary>§8 全局弹框 <span class="c"><span class="done" data-counter="c1-8">0</span> / 2</span></summary>
+          <div class="its" data-group="c1-8">
+            <div class="it logic"><input type="checkbox" id="m801" /><label for="m801"><b>§8.1 弹框重复弹出 bug（每次进点单页全量重调接口 → 弹框重触发）</b> <em>(P0 bug · 治本对标霸王茶姬：后端曝光去重 advertiseInfo/advertiseExpose；前端持久化频控为兜底)</em> <span class="it-tag t-api">🔌 API+🗄</span></label></div>
+            <div class="it logic"><input type="checkbox" id="m802" /><label for="m802"><b>§8.2 收货地址重复弹出防抖</b> <em>(P0 bug)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
+          </div>
+        </details>
+
+        <details data-page="menu">
+          <summary>§9 页面骨架 / 吸顶 <span class="c"><span class="done" data-counter="c1-9">0</span> / 2</span></summary>
+          <div class="its" data-group="c1-9">
+            <div class="it logic"><input type="checkbox" id="m901" /><label for="m901"><b>§9.1 安卓上滑顶部门店行吸顶</b> <em>(P0)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it"><input type="checkbox" id="m902" checked /><label for="m902"><b>§9.2 商品分类名右侧吸顶</b> <em>(sticky 分类标题)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
+          </div>
+        </details>
+
+        <details data-page="goods" open>
+          <summary>
+            商品详情 · 增量
+            <span class="c"><span class="done" data-counter="c2">0</span> / 7</span>
+          </summary>
+          <div class="its" data-group="c2">
+            <div class="it"><input type="checkbox" id="g1" checked /><label for="g1"><b>保留全屏页 + 透明商品图浮在渐变上（不改成弹框）</b> <em>(不推翻现状)</em></label></div>
+            <div class="it"><input type="checkbox" id="g2" checked /><label for="g2"><b>顶部右侧悬浮分享按钮（毛玻璃）</b> <em>(瑞幸/霸王茶姬都有)</em></label></div>
+            <div class="it"><input type="checkbox" id="g3" checked /><label for="g3"><b>左下卡路里胶囊</b> <em>(霸王茶姬做法)</em></label></div>
+            <div class="it"><input type="checkbox" id="g4" checked /><label for="g4"><b>描述文案关键词品牌色加重</b> <em>(原描述纯灰色一行)</em></label></div>
+            <div class="it"><input type="checkbox" id="g5" checked /><label for="g5"><b>"上滑调整口味" 提示</b> <em>(霸王茶姬做法)</em></label></div>
+            <div class="it"><input type="checkbox" id="g6" checked /><label for="g6"><b>加料保留 2 列 pill + 选中步进器，但加角标数量</b> <em>(现状已有，补角标对齐瑞幸)</em></label></div>
+            <div class="it"><input type="checkbox" id="g7" checked /><label for="g7"><b>底部双层栏加阴影分层</b> <em>(和滚动区内容分界)</em></label></div>
+          </div>
+        </details>
+
+        <details data-page="checkout" open>
+          <summary>
+            结算页 · 增量
+            <span class="c"><span class="done" data-counter="c3">0</span> / 7</span>
+          </summary>
+          <div class="its" data-group="c3">
+            <div class="it"><input type="checkbox" id="k1" checked /><label for="k1"><b>红色头部保留但底部加"切换门店"胶囊入口</b> <em>(现状不支持切换，瑞幸都有)</em></label></div>
+            <div class="it"><input type="checkbox" id="k2" checked /><label for="k2"><b>取餐方式保留大 Tab 卡（红描边+右上角），无需改造</b> <em>(现状做得好的地方保留)</em></label></div>
+            <div class="it"><input type="checkbox" id="k3" checked /><label for="k3"><b>制作时长：数字突出显示（#10 分钟）</b> <em>(霸王茶姬做法)</em></label></div>
+            <div class="it"><input type="checkbox" id="k4" checked /><label for="k4"><b>商品列表 3 件后折叠胶囊</b> <em>(星巴克/肯德基做法，页面从 3-4 屏压到 2 屏)</em></label></div>
+            <div class="it"><input type="checkbox" id="k5" checked /><label for="k5"><b>超值换购保留红三角角标，但内容改横滑 + 文字降权</b> <em>(现状全展开占 1-2 屏 → 视觉降权)</em></label></div>
+            <div class="it"><input type="checkbox" id="k6" checked /><label for="k6"><b>支付方式：从全展开改为单行已选 + 点击弹窗选择</b> <em>(星巴克做法，页面长度 -30%)</em></label></div>
+            <div class="it"><input type="checkbox" id="k7" checked /><label for="k7"><b>底部栏加顶部阴影分层</b> <em>(现状无分界)</em></label></div>
+          </div>
+        </details>
+
+        <details>
+          <summary>
+            规范通用
+            <span class="c"><span class="done" data-counter="c4">0</span> / 8</span>
+          </summary>
+          <div class="its" data-group="c4">
+            <div class="it"><input type="checkbox" id="s1" checked /><label for="s1"><b>品牌色走 CSS Variable（运行时 CMS 注入）</b> <em>(顶部切换器演示)</em></label></div>
+            <div class="it"><input type="checkbox" id="s2" checked /><label for="s2"><b>文字灰度 4 级 #333/#666/#999/#CCC</b></label></div>
+            <div class="it"><input type="checkbox" id="s3" checked /><label for="s3"><b>字号 7 档 token (10/12/14/16/17/20/26)</b></label></div>
+            <div class="it"><input type="checkbox" id="s4" checked /><label for="s4"><b>字重 3 档 (400/500/600)</b></label></div>
+            <div class="it"><input type="checkbox" id="s5" checked /><label for="s5"><b>圆角 4 档 (8/12/16/999)</b></label></div>
+            <div class="it"><input type="checkbox" id="s6" checked /><label for="s6"><b>阴影分级 3 档 + bottom 专用</b></label></div>
+            <div class="it"><input type="checkbox" id="s7" checked /><label for="s7"><b>按压反馈（scale 0.88-0.98）</b></label></div>
+            <div class="it"><input type="checkbox" id="s8" checked /><label for="s8"><b>动效时长 150/250/350ms + Material 缓动</b></label></div>
+          </div>
+        </details>
+      </aside>
+    </div>
+
+    <script>
+      const pages = {
+        menu: document.getElementById('page-menu'),
+        goods: document.getElementById('page-goods'),
+        checkout: document.getElementById('page-checkout'),
+      }
+      const tabBtns = document.querySelectorAll('#pg-tabs button')
+      function switchPage(name) {
+        Object.entries(pages).forEach(([k, el]) =>
+          el.classList.toggle('active', k === name)
+        )
+        tabBtns.forEach((b) =>
+          b.classList.toggle('active', b.dataset.page === name)
+        )
+        // 右侧整改清单按当前激活页过滤；规范通用等无 data-page 块常驻
+        document.querySelectorAll('.panel [data-page]').forEach((el) => {
+          el.style.display = el.dataset.page === name ? '' : 'none'
+        })
+      }
+      tabBtns.forEach((b) =>
+        b.addEventListener('click', () => switchPage(b.dataset.page))
+      )
+      // 初始按默认激活页（menu）过滤一次
+      switchPage('menu')
+
+      document.querySelectorAll('#page-menu .pd').forEach((p) => {
+        p.addEventListener('click', (e) => {
+          if (e.target.closest('button')) return
+          switchPage('goods')
+        })
+      })
+
+      const sheet = document.getElementById('cart-sheet')
+      function toggleSheet() {
+        sheet.classList.toggle('show')
+      }
+
+      // 分类 ↔ 商品双向联动（§3.2 点击平滑滚动+弹性反馈 / §2.2 滚动高亮含到底）
+      const sidebarEl = document.getElementById('sidebar')
+      const productsEl = document.querySelector('#page-menu .products')
+      const cats = [...sidebarEl.querySelectorAll('.cat')]
+      let lockSpy = false
+      function sectionTop(key) {
+        const sec = productsEl.querySelector(`.sec-title[data-cat="${key}"]`)
+        return sec ? sec.offsetTop : null
+      }
+      function highlightCat(key) {
+        cats.forEach((c) => c.classList.toggle('on', c.dataset.cat === key))
+        const on = sidebarEl.querySelector('.cat.on')
+        if (on) on.scrollIntoView({ block: 'nearest' })
+      }
+      cats.forEach((c) => {
+        c.addEventListener('click', () => {
+          const key = c.dataset.cat
+          highlightCat(key)
+          // §3.2 弹性反馈：勾选时短暂放大；取消则无
+          if (document.getElementById('m302')?.checked && c.animate) {
+            c.animate(
+              [{ transform: 'scale(1.08)' }, { transform: 'scale(1)' }],
+              { duration: 200, easing: 'ease-out' }
+            )
+          }
+          const top = sectionTop(key)
+          if (top == null) return
+          const smooth = document.getElementById('m302')?.checked
+          lockSpy = true
+          productsEl.scrollTo({ top, behavior: smooth ? 'smooth' : 'auto' })
+          setTimeout(() => {
+            lockSpy = false
+          }, 450)
+        })
+      })
+      // §2.2 滚动联动高亮（含到底强制高亮最后一个分类）
+      productsEl.addEventListener('scroll', () => {
+        if (lockSpy || !document.getElementById('m202')?.checked) return
+        if (
+          productsEl.scrollTop + productsEl.clientHeight >=
+          productsEl.scrollHeight - 4
+        ) {
+          highlightCat(cats[cats.length - 1].dataset.cat)
+          return
+        }
+        const titles = [...productsEl.querySelectorAll('.sec-title')]
+        let cur = titles[0]
+        for (const t of titles) {
+          if (t.offsetTop - productsEl.scrollTop <= 10) cur = t
+          else break
+        }
+        if (cur) highlightCat(cur.dataset.cat)
+      })
+
+      document.querySelectorAll('.sg').forEach((g) => {
+        g.querySelectorAll('.opt').forEach((o) => {
+          o.addEventListener('click', () => {
+            g.querySelectorAll('.opt').forEach((x) => x.classList.remove('on'))
+            o.classList.add('on')
+          })
+        })
+      })
+
+      document.querySelectorAll('.pickup-tabs').forEach((g) => {
+        g.querySelectorAll('.pickup-tab').forEach((o) => {
+          o.addEventListener('click', () => {
+            g.querySelectorAll('.pickup-tab').forEach((x) =>
+              x.classList.remove('on')
+            )
+            o.classList.add('on')
+          })
+        })
+      })
+
+      function hexToRgb(hex) {
+        const h = hex.replace('#', '')
+        return [
+          parseInt(h.substring(0, 2), 16),
+          parseInt(h.substring(2, 4), 16),
+          parseInt(h.substring(4, 6), 16),
+        ]
+      }
+      function darken(hex, amount) {
+        const [r, g, b] = hexToRgb(hex)
+        return `rgb(${Math.round(r * (1 - amount))}, ${Math.round(g * (1 - amount))}, ${Math.round(b * (1 - amount))})`
+      }
+      document.querySelectorAll('.swatch').forEach((s) => {
+        s.addEventListener('click', () => {
+          const hex = s.dataset.color
+          document
+            .querySelectorAll('.swatch')
+            .forEach((x) => x.classList.remove('on'))
+          s.classList.add('on')
+          const [r, g, b] = hexToRgb(hex)
+          const root = document.documentElement
+          root.style.setProperty('--primary', hex)
+          root.style.setProperty('--primary-dark', darken(hex, 0.12))
+          root.style.setProperty('--primary-light', `rgba(${r}, ${g}, ${b}, 0.1)`)
+          root.style.setProperty('--primary-bg', `rgba(${r}, ${g}, ${b}, 0.05)`)
+        })
+      })
+
+      function updateCounts() {
+        document.querySelectorAll('.its').forEach((group) => {
+          const key = group.dataset.group
+          const checked = group.querySelectorAll('input:checked').length
+          const counter = document.querySelector(`[data-counter="${key}"]`)
+          if (counter) counter.textContent = checked
+        })
+      }
+      document
+        .querySelectorAll('.panel input[type="checkbox"]')
+        .forEach((c) => c.addEventListener('change', updateCounts))
+      updateCounts()
+
+      // ===== 整改增量交互 =====
+
+      // 通用弹层开合（spec / store）
+      function showSheet(id) {
+        document.getElementById(id).classList.add('show')
+      }
+      function hideSheet(id) {
+        document.getElementById(id).classList.remove('show')
+      }
+
+      // §1.4 收藏门店：空心♡ ⇄ 实心♥
+      function toggleFav(btn) {
+        const on = btn.getAttribute('aria-pressed') === 'true'
+        btn.setAttribute('aria-pressed', String(!on))
+      }
+
+      // 堂食 / 外卖切换
+      document.querySelectorAll('#dine-switch button').forEach((b) => {
+        b.addEventListener('click', () => {
+          document
+            .querySelectorAll('#dine-switch button')
+            .forEach((x) => x.classList.remove('on'))
+          b.classList.add('on')
+        })
+      })
+
+
+      // §1.5 制作中订单卡三态（参考霸王茶姬）
+      const MAKING = {
+        none: { numHTML: '<span class="dm-lbl">暂无制作中订单</span>', prog: 0 },
+        busy: { numHTML: '<b>3</b><span class="dm-lbl">单制作中</span>', prog: 45 },
+        peak: { numHTML: '<b>24</b><span class="dm-lbl">单排队中</span>', prog: 15 },
+      }
+      const makingOrder = ['none', 'busy', 'peak']
+      function setMaking(state) {
+        const el = document.getElementById('order-status')
+        if (!el) return
+        el.dataset.state = state
+        const d = MAKING[state]
+        el.querySelector('.dm-num').innerHTML = d.numHTML
+        const prog = el.querySelector('.dm-prog')
+        prog.style.display = d.prog > 0 ? '' : 'none'
+        prog.querySelector('.fill').style.width = d.prog + '%'
+        document
+          .querySelectorAll('[data-seg="making"] button')
+          .forEach((b) => b.classList.toggle('on', b.dataset.val === state))
+      }
+      function cycleMaking() {
+        const el = document.getElementById('order-status')
+        const i = makingOrder.indexOf(el.dataset.state)
+        setMaking(makingOrder[(i + 1) % makingOrder.length])
+      }
+
+      // §5.4 结算按钮：可结算 / 不可结算（起送门槛）；与购物车空态协同
+      function setCheckout(enabled) {
+        checkoutDemo = enabled
+        document
+          .querySelectorAll('[data-seg="checkout"] button')
+          .forEach((b) =>
+            b.classList.toggle('on', (b.dataset.val === 'on') === enabled)
+          )
+        renderCheckout()
+      }
+      function onCheckout() {
+        const cta = document.getElementById('cart-cta')
+        if (cta.classList.contains('disabled')) return
+        document.getElementById('cart-sheet').classList.remove('show')
+        switchPage('checkout')
+      }
+
+      // §6.6 全选切换（驱动真实购物车）
+      function toggleSelAll() {
+        const items = Object.values(cart)
+        const allOn = items.length && items.every((i) => i.checked)
+        items.forEach((i) => (i.checked = !allOn))
+        renderAll()
+      }
+
+      // §7.1 门店选择 + 回填顶部门店名
+      function pickStore(card) {
+        document
+          .querySelectorAll('#store-sheet .store-card')
+          .forEach((c) => c.classList.remove('on'))
+        card.classList.add('on')
+        const nm = card.querySelector('.sc-nm').textContent
+        const txt = document.querySelector('#page-menu .shop-info .name .nm-text')
+        if (txt) txt.textContent = nm
+        setTimeout(() => hideSheet('store-sheet'), 200)
+      }
+
+      // 初始化制作中卡进度条（0 → 当前态，触发宽度过渡）
+      window.addEventListener('load', () => {
+        const os = document.getElementById('order-status')
+        if (os) setMaking(os.dataset.state)
+      })
+
+      // ===== 现状 ⇄ 整改 联动：可视清单项勾选驱动左侧原型 =====
+      // 勾选 = 整改态；取消 = 现状/无该增量。纯逻辑项不参与。
+      const FEAT = {
+        m101: 'ctrlsize',
+        m102: 'dinecenter',
+        m103: 'disticon',
+        m104: 'fav',
+        m201: 'badgeunify',
+        m203: 'scrollbar',
+        m204: 'cartcnt',
+        m205: 'selstate',
+        m301: 'pricetier',
+        m401: 'qring',
+        m501: 'cartcolor',
+        m502: 'plusalign',
+        m105: 'makingbar',
+        m504: 'disabled',
+        m602: 'ck',
+        m605: 'multiprice',
+        m606: 'tools',
+        m607: 'coupon',
+        m608: 'discprice',
+        m609: 'cards',
+        m701: 'storecard',
+        m902: 'sticky',
+      }
+      const pageMenu = document.getElementById('page-menu')
+      function applyFeat(id) {
+        const key = FEAT[id]
+        const cb = document.getElementById(id)
+        if (!key || !cb) return
+        pageMenu.classList.toggle('off-' + key, !cb.checked)
+      }
+      Object.keys(FEAT).forEach((id) => {
+        const cb = document.getElementById(id)
+        if (cb) {
+          cb.addEventListener('change', () => applyFeat(id))
+          applyFeat(id)
+        }
+      })
+
+      // §3.3 到底文案：整改「我是有底线的」⇄ 现状「已经到底啦」
+      const endHintEl = document.querySelector('#page-menu .end-hint span')
+      const m303 = document.getElementById('m303')
+      function applyEndHint() {
+        if (endHintEl && m303)
+          endHintEl.textContent = m303.checked ? '我是有底线的' : '已经到底啦'
+      }
+      if (m303) {
+        m303.addEventListener('change', applyEndHint)
+        applyEndHint()
+      }
+
+      // §4 选规格弹窗骨架：勾选时 + 号弹窗，取消时直接加购（无弹窗）
+      function tryOpenSpec() {
+        const m400 = document.getElementById('m400')
+        if (m400 && !m400.checked) return
+        showSheet('spec-sheet')
+      }
+
+      // =========================================================
+      // 真实购物车状态：菜单加购 / 步进 / 勾选 / 全选 / 清空全部由数据驱动
+      // =========================================================
+      const ICN_PLUS =
+        '<svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg>'
+      const ICN_MINUS =
+        '<svg class="i ix" style="stroke-width: 2.5"><use href="#i-minus" /></svg>'
+      const ICN_CHECK =
+        '<svg class="i ix" style="stroke-width: 3"><use href="#i-check" /></svg>'
+      const SPEC_KEY = '【限时尝鲜】- 暖心芝士'
+      const cart = {} // name -> { name, price, orig, spec, qty, img, em, cat, checked }
+      let checkoutDemo = true
+
+      const money = (n) => n.toFixed(2)
+
+      function catOfCard(card) {
+        let node = card
+        while ((node = node.previousElementSibling)) {
+          if (node.classList && node.classList.contains('sec-title'))
+            return node.dataset.cat
+        }
+        return null
+      }
+      function pdData(card) {
+        const im = card.querySelector('.im')
+        const origEl = card.querySelector('.pr .orig')
+        return {
+          name: card.querySelector('.ttl .nm')?.textContent.trim(),
+          price: parseFloat(card.querySelector('.pr .cur .num')?.textContent || '0'),
+          orig: origEl ? parseFloat(origEl.textContent.replace(/[^\d.]/g, '')) : null,
+          spec: card.querySelector('.ds')?.textContent.trim() || '默认规格',
+          img: [...im.classList].find((c) => c.startsWith('g-')) || 'g-red',
+          em: im.querySelector('.em')?.textContent || '🍽',
+          cat: catOfCard(card),
+        }
+      }
+      function hotData(card) {
+        const im = card.querySelector('.im')
+        return {
+          name: card.querySelector('.nm')?.textContent.trim(),
+          price: parseFloat(card.querySelector('.pr')?.textContent.replace(/[^\d.]/g, '') || '0'),
+          orig: null,
+          spec: '默认规格',
+          img: [...im.classList].find((c) => c.startsWith('g-')) || 'g-red',
+          em: im.querySelector('.em')?.textContent || '🍽',
+          cat: null,
+        }
+      }
+      function addToCart(data, n) {
+        if (!data || !data.name) return
+        const k = data.name
+        if (!cart[k]) cart[k] = { ...data, qty: 0, checked: true }
+        cart[k].qty += n
+        if (cart[k].qty <= 0) delete cart[k]
+        renderAll()
+      }
+      function changeQty(key, delta) {
+        if (!cart[key]) return
+        cart[key].qty += delta
+        if (cart[key].qty <= 0) delete cart[key]
+        renderAll()
+      }
+      function clearCart() {
+        Object.keys(cart).forEach((k) => delete cart[k])
+        renderAll()
+      }
+      function addSpecToCart() {
+        const qty =
+          parseInt(
+            document.querySelector('#spec-sheet .spec-ft .q')?.textContent,
+            10
+          ) || 1
+        addToCart(
+          { name: SPEC_KEY, price: 11.9, orig: 16.8, spec: '标准份 · 原味', img: 'g-red', em: '🍟', cat: 'wz' },
+          qty
+        )
+        hideSheet('spec-sheet')
+      }
+
+      function cartSummary() {
+        let qty = 0, total = 0, saved = 0, allQty = 0
+        Object.values(cart).forEach((i) => {
+          allQty += i.qty
+          if (i.checked) {
+            qty += i.qty
+            total += i.price * i.qty
+            if (i.orig) saved += (i.orig - i.price) * i.qty
+          }
+        })
+        return { qty, total, saved, allQty }
+      }
+
+      function renderCheckout() {
+        const cta = document.getElementById('cart-cta')
+        const s = cartSummary()
+        let disabled = false, label = '去结算'
+        if (s.qty === 0) {
+          disabled = true
+          label = '购物车是空的'
+        } else if (!checkoutDemo) {
+          disabled = true
+          label = '还差 ¥8.45 起送'
+        }
+        cta.classList.toggle('disabled', disabled)
+        cta.querySelector('.cta-txt').textContent = label
+      }
+      function renderCartBar() {
+        const s = cartSummary()
+        const bd = document.querySelector('#page-menu .cart-bag .bd')
+        bd.textContent = s.qty
+        bd.style.display = s.qty ? '' : 'none'
+        document.querySelector('#page-menu .cart-mid .pr .num').textContent = money(s.total)
+        const saved = document.querySelector('#page-menu .cart-mid .saved')
+        saved.textContent = '已优惠 ¥ ' + money(s.saved)
+        saved.style.display = s.saved > 0 ? '' : 'none'
+      }
+      function renderCartSheet() {
+        const s = cartSummary()
+        const items = Object.entries(cart)
+        document.querySelector('#cart-sheet .sheet-hd .t').textContent =
+          '购物车 · ' + s.allQty + ' 件'
+        const disc = document.querySelector('#cart-sheet .cart-discount')
+        disc.querySelector('b').textContent = '¥' + money(s.saved)
+        disc.style.display = s.saved > 0 ? '' : 'none'
+        document.querySelector('#cart-sheet .cf-price .line1').innerHTML =
+          '<span class="cnt">共 ' + s.qty + ' 件</span> 实付 <span class="sym">¥</span><span class="num">' + money(s.total) + '</span>'
+        const line2 = document.querySelector('#cart-sheet .cf-price .line2')
+        line2.textContent = '已享折扣 -¥' + money(s.saved)
+        line2.style.display = s.saved > 0 ? '' : 'none'
+        const allOn = items.length && items.every(([, i]) => i.checked)
+        document.querySelector('#cart-sheet .sel-all').classList.toggle('on', !!allOn)
+        const bd = document.querySelector('#cart-sheet .sheet-bd')
+        if (!items.length) {
+          bd.innerHTML = '<div class="cart-empty">购物车还是空的，去挑点好吃的吧～</div>'
+          return
+        }
+        bd.innerHTML = items
+          .map(
+            ([k, it]) =>
+              '<div class="ci" data-key="' + k + '">' +
+              '<div class="ck' + (it.checked ? ' on' : '') + '">' + ICN_CHECK + '</div>' +
+              '<div class="im ' + it.img + '"><span class="em">' + it.em + '</span></div>' +
+              '<div class="info"><div class="n">' + it.name + '</div>' +
+              '<div class="s">' + it.spec + '</div>' +
+              '<div class="p"><span class="cur">¥' + it.price + '</span>' +
+              (it.orig
+                ? '<span class="orig">¥' + it.orig + '</span><span class="cut">已减 ¥' + money(it.orig - it.price) + '</span>'
+                : '') +
+              '</div></div>' +
+              '<div class="stp"><button class="mi">' + ICN_MINUS + '</button><span class="q">' + it.qty + '</span><button class="pl">' + ICN_PLUS + '</button></div>' +
+              '</div>'
+          )
+          .join('')
+      }
+      function renderCatBadges() {
+        const byCat = {}
+        Object.values(cart).forEach((i) => {
+          if (i.cat) byCat[i.cat] = (byCat[i.cat] || 0) + i.qty
+        })
+        document.querySelectorAll('#sidebar .cat').forEach((c) => {
+          let badge = c.querySelector('.cart-cnt')
+          const n = byCat[c.dataset.cat] || 0
+          if (n > 0) {
+            if (!badge) {
+              badge = document.createElement('span')
+              badge.className = 'cart-cnt'
+              c.appendChild(badge)
+            }
+            badge.textContent = n > 99 ? '99+' : n
+          } else if (badge) {
+            badge.remove()
+          }
+        })
+      }
+      function renderCardSteppers() {
+        document.querySelectorAll('#page-menu .products .pd').forEach((card) => {
+          const name = card.querySelector('.ttl .nm')?.textContent.trim()
+          const qty = cart[name]?.qty || 0
+          const row = card.querySelector('.row')
+          if (qty > 0) {
+            row.querySelector('.add')?.remove()
+            let stp = row.querySelector('.stp')
+            if (!stp) {
+              stp = document.createElement('div')
+              stp.className = 'stp'
+              stp.innerHTML =
+                '<button class="mi">' + ICN_MINUS + '</button><span class="q">' + qty + '</span><button class="pl">' + ICN_PLUS + '</button>'
+              row.appendChild(stp)
+            } else {
+              stp.querySelector('.q').textContent = qty
+            }
+          } else {
+            row.querySelector('.stp')?.remove()
+            if (!row.querySelector('.add')) {
+              const b = document.createElement('button')
+              b.className = 'add'
+              b.innerHTML = ICN_PLUS
+              row.appendChild(b)
+            }
+          }
+        })
+      }
+      function renderAll() {
+        renderCartBar()
+        renderCartSheet()
+        renderCatBadges()
+        renderCardSteppers()
+        renderCheckout()
+      }
+
+      // 委托点击：菜单加购 / 步进 / 购物车行 / 清空；选规格与商详步进走本地兜底
+      document.addEventListener('click', (e) => {
+        const pd = e.target.closest('#page-menu .products .pd')
+        if (pd) {
+          if (e.target.closest('.add')) {
+            const name = pd.querySelector('.ttl .nm')?.textContent.trim()
+            if (name === SPEC_KEY && document.getElementById('m400')?.checked) {
+              tryOpenSpec()
+            } else {
+              addToCart(pdData(pd), 1)
+            }
+            return
+          }
+          if (e.target.closest('.pl')) {
+            addToCart(pdData(pd), 1)
+            return
+          }
+          if (e.target.closest('.mi')) {
+            changeQty(pd.querySelector('.ttl .nm')?.textContent.trim(), -1)
+            return
+          }
+        }
+        const hot = e.target.closest('#page-menu .hot-card')
+        if (hot && e.target.closest('.add-rd')) {
+          addToCart(hotData(hot), 1)
+          return
+        }
+        if (e.target.closest('#cart-sheet .clr')) {
+          clearCart()
+          return
+        }
+        const ci = e.target.closest('#cart-sheet .ci')
+        if (ci) {
+          const key = ci.dataset.key
+          if (e.target.closest('.pl')) changeQty(key, 1)
+          else if (e.target.closest('.mi')) changeQty(key, -1)
+          else if (e.target.closest('.ck')) {
+            if (cart[key]) {
+              cart[key].checked = !cart[key].checked
+              renderAll()
+            }
+          }
+          return
+        }
+        // 选规格 / 商详的本地步进（不入购物车状态）
+        const plus = e.target.closest('.pl')
+        const minus = e.target.closest('.mi')
+        if (plus || minus) {
+          const q = (plus || minus).closest('.stp')?.querySelector('.q')
+          if (q) {
+            const v = parseInt(q.textContent, 10) || 0
+            q.textContent = String(plus ? v + 1 : Math.max(0, v - 1))
+          }
+        }
+      })
+
+      // 初始种子：暖心芝士 ×1 + 掌中宝 ×1（均属王炸新品）
+      cart[SPEC_KEY] = { name: SPEC_KEY, price: 11.9, orig: 16.8, spec: '标准份 · 常温', img: 'g-red', em: '🍟', cat: 'wz', qty: 1, checked: true }
+      cart['掌中宝 (鸡膝软骨) 250g'] = { name: '掌中宝 (鸡膝软骨) 250g', price: 22.9, orig: null, spec: '标准份 · 常温', img: 'g-amber', em: '🍗', cat: 'wz', qty: 1, checked: true }
+      renderAll()
+    </script>
+  </body>
+</html>
