@@ -484,7 +484,7 @@
         min-height: 0;
         position: relative;
         overflow-y: auto;
-        background: var(--bg-page);
+        background: #fff;
       }
       .products::-webkit-scrollbar {
         width: 0;
@@ -611,12 +611,13 @@
         margin-right: -6px;
       }
 
-      /* 分类标题 - 【整改增量】吸顶 + 数量 */
+      /* 分类标题 - 【整改增量】吸顶（不附带商品计数） */
       .sec-title {
         position: sticky;
         top: 0;
         padding: var(--sp-4) var(--sp-3) var(--sp-2);
-        background: var(--bg-page);
+        background: #fff;
+        border-bottom: 1px solid var(--border);
         display: flex;
         align-items: baseline;
         gap: 6px;
@@ -624,6 +625,7 @@
         font-weight: var(--fw-semibold);
         z-index: 5;
       }
+      /* 【整改 §3.7】商品区分类标题竖条：保持在标题左侧（原位），新增独立开关可关闭 */
       .sec-title::before {
         content: '';
         display: block;
@@ -633,25 +635,17 @@
         border-radius: 2px;
         transform: translateY(1px);
       }
-      .sec-title .cnt {
-        font-size: var(--fs-tiny);
-        color: var(--text-tertiary);
-        font-weight: var(--fw-regular);
-      }
 
       /* 主商品卡：图左文右 — 忠实现状 */
+      /* 对照真机：商品区为平铺列表（非浮起卡片）；分隔线只在分类标题下，商品行之间不画线 */
       .pd {
-        margin: 0 var(--sp-3) var(--sp-2);
         padding: var(--sp-3);
         background: #fff;
-        /* 【整改增量】卡片化：圆角+微阴影 */
-        border-radius: var(--r-md);
-        box-shadow: var(--shadow-card);
         display: flex;
         gap: var(--sp-3);
       }
       .pd:active {
-        transform: scale(0.99);
+        background: var(--bg-page);
       }
       .pd .im {
         position: relative;
@@ -804,6 +798,39 @@
       }
       .pd .add:active {
         transform: scale(0.88);
+      }
+      /* §4 选规格：有规格/套餐商品的加购入口为「选规格」胶囊（对照真机，黑色非品牌色） */
+      .pd .spec {
+        position: relative;
+        height: 28px;
+        padding: 0 12px;
+        border-radius: var(--r-full);
+        background: #1a1a1a;
+        color: #fff;
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-semibold);
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        transition: transform var(--d-fast) var(--e-default);
+      }
+      .pd .spec:active {
+        transform: scale(0.94);
+      }
+      .pd .spec .qb {
+        position: absolute;
+        top: -7px;
+        right: -6px;
+        min-width: 16px;
+        height: 16px;
+        padding: 0 4px;
+        border-radius: var(--r-full);
+        background: var(--primary);
+        color: #fff;
+        font-size: var(--fs-tiny);
+        line-height: 16px;
+        text-align: center;
+        box-shadow: 0 0 0 2px #fff;
       }
       .pd .stp {
         display: flex;
@@ -2243,36 +2270,25 @@
          整改增量补齐（对齐《点单页整改 PRD》§1–§9）
          ========================================================= */
 
-      /* §1.2 堂食/外卖切换：放大版,作为门店信息右栏单独占据区域,垂直拉伸 */
+      /* §1.2 堂食/外卖切换：纯文字两端切换，无背景色/无胶囊底（对照真机：选中态仅靠字色+字重区分） */
       .shop-info .dine-switch {
         align-self: stretch;
         flex-shrink: 0;
         display: flex;
         align-items: center;
-        background: var(--bg-page);
-        border-radius: var(--r-md);
-        padding: 4px;
+        gap: var(--sp-3);
       }
       .shop-info .dine-switch button {
-        padding: 5px 10px;
-        font-size: 13px;
-        color: var(--text-secondary);
-        border-radius: var(--r-sm);
+        padding: 5px 2px;
+        font-size: 14px;
+        color: var(--text-tertiary);
         font-weight: var(--fw-medium);
         transition: all var(--d-fast) var(--e-default);
         line-height: 1.2;
       }
       .shop-info .dine-switch button.on {
-        background: #fff;
         color: var(--text-primary);
         font-weight: var(--fw-semibold);
-        box-shadow: var(--shadow-card);
-      }
-      .dine-switch button.on {
-        background: #fff;
-        color: var(--text-primary);
-        font-weight: var(--fw-semibold);
-        box-shadow: var(--shadow-card);
       }
 
       /* 门店信息：左栏(店名+距离两行) + 右栏(堂食/外卖 放大独占垂直拉伸) */
@@ -2899,16 +2915,9 @@
         height: 30px;
         font-size: var(--fs-xs);
       }
-      /* §1.2 规整 → 现状偏上、无胶囊化（参差不规整） */
+      /* §1.2 规整 → 现状：未与门店信息垂直拉伸对齐（偏上、参差不规整） */
       #page-menu.off-dinecenter .m-nav .dine-switch {
         align-self: flex-start;
-        background: transparent;
-        padding: 0;
-      }
-      #page-menu.off-dinecenter .m-nav .dine-switch button.on {
-        background: transparent;
-        box-shadow: none;
-        color: var(--text-primary);
       }
       /* §1.3 距离前图标 */
       #page-menu.off-disticon .shop-info .dist svg {
@@ -3042,6 +3051,10 @@
       /* §9.2 分类标题吸顶 → 现状不吸顶 */
       #page-menu.off-sticky .sec-title {
         position: static;
+      }
+      /* §3.7 商品区分类标题竖条 → 关闭则不显示 */
+      #page-menu.off-sectionbar .sec-title::before {
+        display: none;
       }
     </style>
   </head>
@@ -3354,7 +3367,7 @@
 
                   <!-- 王炸新品 分类标题 + 商品 -->
                   <div class="sec-title" data-cat="wz">
-                    王炸新品 <span class="cnt">· 6 件</span>
+                    王炸新品
                   </div>
 
                   <div class="pd">
@@ -3375,9 +3388,7 @@
                           <span class="cur"><span class="sym">¥</span><span class="num">11.9</span></span>
                           <span class="orig">¥16.8</span>
                         </div>
-                        <button class="add">
-                          <svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg>
-                        </button>
+                        <button class="spec">选规格</button>
                       </div>
                     </div>
                   </div>
@@ -3440,7 +3451,7 @@
                   </div>
 
                   <div class="sec-title" data-cat="hd">
-                    店内活动 <span class="cnt">· 4 件</span>
+                    店内活动
                   </div>
 
                   <div class="pd">
@@ -3459,9 +3470,7 @@
                           <span class="cur"><span class="sym">¥</span><span class="num">19.8</span></span>
                           <span class="orig">¥24</span>
                         </div>
-                        <button class="add">
-                          <svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg>
-                        </button>
+                        <button class="spec">选规格</button>
                       </div>
                     </div>
                   </div>
@@ -3482,14 +3491,12 @@
                           <span class="cur"><span class="sym">¥</span><span class="num">28.9</span></span>
                           <span class="orig">¥35</span>
                         </div>
-                        <button class="add">
-                          <svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg>
-                        </button>
+                        <button class="spec">选规格</button>
                       </div>
                     </div>
                   </div>
 
-                  <div class="sec-title" data-cat="sz">生炸出击 <span class="cnt">· 5 件</span></div>
+                  <div class="sec-title" data-cat="sz">生炸出击</div>
                   <div class="pd">
                     <div class="im g-amber"><span class="em">🍗</span></div>
                     <div class="info">
@@ -3517,7 +3524,7 @@
                     </div>
                   </div>
 
-                  <div class="sec-title" data-cat="xs">美味小食 <span class="cnt">· 6 件</span></div>
+                  <div class="sec-title" data-cat="xs">美味小食</div>
                   <div class="pd">
                     <div class="im g-cream"><span class="em">🍟</span></div>
                     <div class="info">
@@ -3545,7 +3552,7 @@
                     </div>
                   </div>
 
-                  <div class="sec-title" data-cat="xc">生炸鲜蔬 <span class="cnt">· 4 件</span></div>
+                  <div class="sec-title" data-cat="xc">生炸鲜蔬</div>
                   <div class="pd">
                     <div class="im g-forest"><span class="em">🍄</span></div>
                     <div class="info">
@@ -3573,7 +3580,7 @@
                     </div>
                   </div>
 
-                  <div class="sec-title" data-cat="jj">鸡架搭子 <span class="cnt">· 3 件</span></div>
+                  <div class="sec-title" data-cat="jj">鸡架搭子</div>
                   <div class="pd">
                     <div class="im g-red"><span class="em">🍗</span></div>
                     <div class="info">
@@ -3601,7 +3608,7 @@
                     </div>
                   </div>
 
-                  <div class="sec-title" data-cat="cg">叉骨搭子 <span class="cnt">· 3 件</span></div>
+                  <div class="sec-title" data-cat="cg">叉骨搭子</div>
                   <div class="pd">
                     <div class="im g-amber"><span class="em">🍖</span></div>
                     <div class="info">
@@ -3629,7 +3636,7 @@
                     </div>
                   </div>
 
-                  <div class="sec-title" data-cat="cn">脆嫩出击 <span class="cnt">· 4 件</span></div>
+                  <div class="sec-title" data-cat="cn">脆嫩出击</div>
                   <div class="pd">
                     <div class="im g-cream"><span class="em">🍗</span></div>
                     <div class="info">
@@ -3657,7 +3664,7 @@
                     </div>
                   </div>
 
-                  <div class="sec-title" data-cat="tp">甜品饮料 <span class="cnt">· 5 件</span></div>
+                  <div class="sec-title" data-cat="tp">甜品饮料</div>
                   <div class="pd">
                     <div class="im g-plum"><span class="em">🥭</span></div>
                     <div class="info">
@@ -4275,7 +4282,7 @@
             </span>
           </div>
           <div class="dc-hint">
-            顶部门店爱心、制作中状态栏均可直接点击切换；点门店行打开门店 sheet（⛔ 仅示意 mock，实际为跳转独立「选择门店」页），点首个商品 + 号打开选规格弹窗。
+            顶部门店爱心、制作中状态栏均可直接点击切换；点门店行打开门店 sheet（⛔ 仅示意 mock，实际为跳转独立「选择门店」页），点有规格商品的「选规格」按钮打开选规格弹窗。
           </div>
         </div>
 
@@ -4292,7 +4299,7 @@
             </div>
             <div class="risk r-schema">
               <b>② 需扩 CMS schema（7 项确定 + 5 项可能）</b>
-              <em>确定扩：§2.4 加购红点 / §2.6 横向分类 / §3.6 加车动画 / §1.5 制作中（含制作进度条动画 · 落地嵌入门店行偏离现有 Schedule schema）/ §8.1 弹框频控（仅 B2 兜底走 schema）/ §3.5 二级分类。可能扩：§1.2 §2.5 §5.4 §9.2 §1.4 隐藏开关</em>
+              <em>确定扩：§2.4 加购红点 / §3.6 加车动画 / §1.5 制作中（含制作进度条动画 · 落地嵌入门店行偏离现有 Schedule schema）/ §8.1 弹框频控（仅 B2 兜底走 schema）/ §3.5 二级分类。可能扩：§1.2 §2.5 §5.4 §9.2 §1.4 隐藏开关</em>
             </div>
             <div class="risk r-api">
               <b>③ 需后端 API（3 项）</b>
@@ -4318,19 +4325,18 @@
         </details>
 
         <details data-page="menu" open>
-          <summary>§2 左侧分类栏 <span class="c"><span class="done" data-counter="c1-2">0</span> / 6</span></summary>
+          <summary>§2 左侧分类栏 <span class="c"><span class="done" data-counter="c1-2">0</span> / 5</span></summary>
           <div class="its" data-group="c1-2">
             <div class="it"><input type="checkbox" id="m201" checked /><label for="m201"><b>§2.1 分类角标统一 + HOT 变体</b> <em>(尺寸/位置一致，NEW 红 / HOT 橙)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
             <div class="it"><input type="checkbox" id="m202" checked /><label for="m202"><b>§2.2 滚动联动高亮（含到底强制高亮最后一类）</b> <em>(P0 bug 已修)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
             <div class="it"><input type="checkbox" id="m203" checked /><label for="m203"><b>§2.3 分类区滚动条隐藏</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
             <div class="it"><input type="checkbox" id="m204" checked /><label for="m204"><b>§2.4 右上角加购数量角标（圆形 14×14 跟主题）</b> <em>(与 NEW 静态角标左右避让共存)</em> <span class="it-tag t-schema">🗄 schema</span></label></div>
             <div class="it"><input type="checkbox" id="m205" checked /><label for="m205"><b>§2.5 选中态：加粗 + 浅色背景块 + 3px 左竖条</b> <em>(背景/色条跟主题)</em> <span class="it-tag t-schema">🗄 schema?</span></label></div>
-            <div class="it logic"><input type="checkbox" id="m206" /><label for="m206"><b>§2.6 横向分类备选形态</b> <em>(视产品判断)</em> <span class="it-tag t-schema">🗄 schema</span></label></div>
           </div>
         </details>
 
         <details data-page="menu" open>
-          <summary>§3 右侧商品区 <span class="c"><span class="done" data-counter="c1-3">0</span> / 6</span></summary>
+          <summary>§3 右侧商品区 <span class="c"><span class="done" data-counter="c1-3">0</span> / 7</span></summary>
           <div class="its" data-group="c1-3">
             <div class="it"><input type="checkbox" id="m301" checked /><label for="m301"><b>§3.1 价格层级（无优惠 #333 / 有优惠品牌色 + 原价灰删除线）</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
             <div class="it"><input type="checkbox" id="m302" checked /><label for="m302"><b>§3.2 点击分类平滑滚动定位 + 弹性反馈</b> <em>(取消则瞬跳无动效)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
@@ -4338,6 +4344,7 @@
             <div class="it logic"><input type="checkbox" id="m304" /><label for="m304"><b>§3.4 swiper 圆角抖动修复</b> <em>(P0 视觉 bug)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
             <div class="it logic"><input type="checkbox" id="m305" /><label for="m305"><b>§3.5 二级分类支持</b> <em>(视产品判断)</em> <span class="it-tag t-api">🔌 API+🗄</span></label></div>
             <div class="it logic"><input type="checkbox" id="m306" /><label for="m306"><b>§3.6 加车飞入抛物线动画</b> <span class="it-tag t-schema">🗄 schema</span></label></div>
+            <div class="it"><input type="checkbox" id="m307" checked /><label for="m307"><b>§3.7 分类标题竖条独立开关（保持左侧）</b> <em>(默认显示在标题左侧 · 3px 跟主题，可单独关闭)</em> <span class="it-tag t-schema">🗄 schema?</span></label></div>
           </div>
         </details>
 
@@ -4708,6 +4715,7 @@
         m204: 'cartcnt',
         m205: 'selstate',
         m301: 'pricetier',
+        m307: 'sectionbar',
         m401: 'qring',
         m501: 'cartcolor',
         m502: 'plusalign',
@@ -4749,7 +4757,7 @@
         applyEndHint()
       }
 
-      // §4 选规格弹窗骨架：勾选时 + 号弹窗，取消时直接加购（无弹窗）
+      // §4 选规格弹窗骨架：m400 勾选时「选规格」按钮弹窗，取消时直接加购（无弹窗）
       function tryOpenSpec() {
         const m400 = document.getElementById('m400')
         if (m400 && !m400.checked) return
@@ -4935,6 +4943,22 @@
           const name = card.querySelector('.ttl .nm')?.textContent.trim()
           const qty = cart[name]?.qty || 0
           const row = card.querySelector('.row')
+          // 有规格商品：始终保持「选规格」入口，仅同步数量角标（不退化为步进器）
+          const spec = card.querySelector('.spec')
+          if (spec) {
+            let qb = spec.querySelector('.qb')
+            if (qty > 0) {
+              if (!qb) {
+                qb = document.createElement('span')
+                qb.className = 'qb'
+                spec.appendChild(qb)
+              }
+              qb.textContent = qty
+            } else if (qb) {
+              qb.remove()
+            }
+            return
+          }
           if (qty > 0) {
             row.querySelector('.add')?.remove()
             let stp = row.querySelector('.stp')
@@ -4970,6 +4994,10 @@
       document.addEventListener('click', (e) => {
         const pd = e.target.closest('#page-menu .products .pd')
         if (pd) {
+          if (e.target.closest('.spec')) {
+            tryOpenSpec()
+            return
+          }
           if (e.target.closest('.add')) {
             const name = pd.querySelector('.ttl .nm')?.textContent.trim()
             if (name === SPEC_KEY && document.getElementById('m400')?.checked) {
