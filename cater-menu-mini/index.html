@@ -189,8 +189,10 @@
 
       .stage {
         display: flex;
-        align-items: safe center;
+        flex-direction: column;
+        align-items: center;
         justify-content: center;
+        gap: 16px;
         overflow: auto;
         padding: 32px;
       }
@@ -968,6 +970,60 @@
       .cart-cta:active {
         background: var(--primary-dark);
       }
+
+      /* 购物车 dock：吸底栏常驻 + 明细从其上方展开（结构同详情页已选 dock；非模态、不压暗；对齐源码 MenuBottom 吸底栏始终可见） */
+      .cart-dock {
+        position: relative;
+        flex-shrink: 0;
+        z-index: 5;
+      }
+      .cart-dock .cart-stack { position: relative; }
+      /* 透明点击层（非模态）：仅用于「点栏外即收起」，不压暗背景 */
+      .cart-dock .cart-pop-catch {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 1400px;
+        background: transparent;
+        visibility: hidden;
+      }
+      .cart-dock.pop-open .cart-pop-catch { visibility: visible; }
+      /* 明细面板：底边贴吸底栏顶，往上展开；收起态下滑+隐藏 */
+      .cart-pop {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 2;
+        max-height: 60vh;
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        border-radius: var(--r-lg) var(--r-lg) 0 0;
+        box-shadow: 0 -5px 16px rgba(0, 0, 0, 0.08);
+        transform: translateY(100%);
+        visibility: hidden;
+        transition:
+          transform var(--d-slow) var(--e-enter),
+          visibility 0s linear var(--d-slow);
+      }
+      .cart-dock.pop-open .cart-pop {
+        transform: translateY(0);
+        visibility: visible;
+        transition: transform var(--d-slow) var(--e-enter);
+      }
+      /* 吸底栏并入 dock：去掉自身上边框/阴影，顶部圆角+上阴影交给上方展开的明细面板，拼成一片 */
+      .cart-dock .cart { border-top: none; box-shadow: none; }
+      .cart-pop .sheet-hd .cart-tools .cart-collapse {
+        width: 26px;
+        height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-tertiary);
+      }
+      .cart-pop .sheet-hd .cart-tools .cart-collapse .i { width: 18px; height: 18px; }
 
       /* 购物车半屏弹层（交互示意） */
       .sheet-wrap {
@@ -1811,6 +1867,18 @@
         padding: var(--sp-4);
         background: #fff;
       }
+      /* §1.5 内容分区节奏（整改）：gd-body 走浅灰底，规格/做法/小料各组为独立白卡，组间留白带 + 顶部分割线，建立信息节奏 */
+      #page-goods .gd-demo .gd-body { background: var(--bg-page); }
+      #page-goods .gd-demo .gd-body > .sg {
+        margin-top: var(--sp-2);
+        border-top: 1px solid var(--divider);
+      }
+      /* §1.5 现状：取消浅灰留白与分割，白卡紧贴堆叠、糊成一张表 */
+      #page-goods.off-secrhythm .gd-demo .gd-body { background: #fff; }
+      #page-goods.off-secrhythm .gd-demo .gd-body > .sg {
+        margin-top: 0;
+        border-top: none;
+      }
       .sg .hd {
         display: flex;
         align-items: center;
@@ -1909,6 +1977,149 @@
         flex: 1;
         text-align: center;
       }
+      /* 小料：霸王茶姬「额外加料」整行式 —— 每项独占一行；名(含 ｜desc) 左 + 价格固定列 + 控件固定列(价格不被按钮挤压) §5.1/§5.3/§5.4 */
+      .gd-addons {
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-3);
+      }
+      .gd-addons .ad-card {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 52px;
+        padding: 0 14px;
+        border-radius: var(--r-md);
+        background: var(--bg-page);
+        border: 1.5px solid transparent;
+        cursor: pointer;
+        transition: background var(--d-fast) var(--e-default), border-color var(--d-fast) var(--e-default);
+      }
+      .gd-addons .ad-card .ad-nm {
+        flex: 1;
+        min-width: 0;
+        font-size: var(--fs-sm);
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      /* 价格固定列：右对齐、固定最小宽；控件单独成列 → 价格位置稳定，不被 +/步进器挤压 */
+      .gd-addons .ad-card .ad-ap {
+        flex-shrink: 0;
+        min-width: 40px;
+        text-align: right;
+        font-size: var(--fs-sm);
+        font-weight: var(--fw-semibold);
+        color: var(--text-primary);
+      }
+      .gd-addons .ad-card .ad-ctrl {
+        flex-shrink: 0;
+        width: 88px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+      }
+      /* 步进器恒定渲染（− 数字 +），未选时把 − 与数字隐藏但保留占位 → 加减位永远预留，选中不跳位、价格不被挤 */
+      .gd-addons .ad-stepper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .gd-addons .ad-stepper .sn {
+        min-width: 14px;
+        text-align: center;
+        font-size: var(--fs-sm);
+        font-weight: var(--fw-medium);
+        color: #fff;
+      }
+      .gd-addons .ad-stepper .sb {
+        width: 26px;
+        height: 26px;
+        border-radius: var(--r-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      /* 未选：只露描边 + 钮，− 与数字占位但隐藏 */
+      .gd-addons .ad-card:not(.on) .ad-stepper .sb.sub,
+      .gd-addons .ad-card:not(.on) .ad-stepper .sn { visibility: hidden; }
+      .gd-addons .ad-card:not(.on) .ad-stepper .sb.add {
+        background: transparent;
+        color: var(--text-secondary);
+        border: 1.5px solid var(--border);
+      }
+      /* 选中：整行主题色实底 + 白字（§5.4 实色填充更可辨），三段步进器全显（§5.1 无浮标 badge） */
+      .gd-addons .ad-card.on { background: var(--primary); border-color: var(--primary); }
+      .gd-addons .ad-card.on .ad-nm,
+      .gd-addons .ad-card.on .ad-ap { color: #fff; }
+      .gd-addons .ad-card.on .ad-stepper .sb.sub { background: transparent; color: #fff; border: 1.5px solid rgba(255, 255, 255, 0.55); }
+      .gd-addons .ad-card.on .ad-stepper .sb.add { background: #fff; color: var(--primary); }
+      /* 售罄：置灰不可点 + 角标 */
+      .gd-addons .ad-card.dis { opacity: 0.5; pointer-events: none; }
+      .gd-addons .ad-card.dis .ad-ap { font-weight: var(--fw-regular); color: var(--text-tertiary); }
+      .gd-addons .ad-soldout {
+        position: absolute;
+        top: 0;
+        right: 0;
+        font-size: var(--fs-tiny);
+        color: var(--text-tertiary);
+        background: var(--divider);
+        padding: 1px 6px;
+        border-radius: 0 var(--r-md) 0 6px;
+      }
+      /* 加料·2 列变体「一行两个」（套餐用，对齐霸王茶姬 attach-selector 2 列态）：⊖ 名称 ¥价 ⊕，− 与 + 钉在两端恒显，数量走右上角角标（中间被名/价占满放不下） */
+      .gd-addons.two {
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+      .gd-addons.two .ad-card {
+        position: relative;
+        flex: 0 0 calc(50% - var(--sp-3) / 2);
+        box-sizing: border-box;
+        min-height: 44px;
+        padding: 0 8px;
+        gap: 6px;
+        overflow: visible;
+      }
+      .gd-addons.two .ad-card .ad-nm { flex: 1; }
+      .gd-addons.two .ad-card .ad-ap { flex-shrink: 0; min-width: 0; }
+      .gd-addons.two .ad-card .sb {
+        width: 22px;
+        height: 22px;
+        border-radius: var(--r-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      /* 未选：− 置灰、+ 描边，整卡浅底 */
+      .gd-addons.two .ad-card:not(.on) .sb.sub { color: var(--text-disabled); border: 1.5px solid var(--border); background: transparent; }
+      .gd-addons.two .ad-card:not(.on) .sb.add { color: var(--text-secondary); border: 1.5px solid var(--border); background: transparent; }
+      /* 选中：整卡主题色实底 + 白字（.on 底色继承基类），− + 走白描边 */
+      .gd-addons.two .ad-card.on .sb.sub,
+      .gd-addons.two .ad-card.on .sb.add { color: #fff; border: 1.5px solid rgba(255, 255, 255, 0.55); background: transparent; }
+      /* 右上角数量角标（2 列态专用，中间放不下数字才落角标） */
+      .gd-addons.two .ad-qty {
+        position: absolute;
+        top: -7px;
+        right: -7px;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 4px;
+        box-sizing: border-box;
+        border-radius: var(--r-full);
+        background: #fff;
+        border: 1.5px solid var(--primary);
+        color: var(--primary);
+        font-size: var(--fs-tiny);
+        font-weight: var(--fw-semibold);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
       .addon .stp-btn {
         width: 28px;
         height: 28px;
@@ -1941,6 +2152,522 @@
         align-items: center;
         justify-content: center;
       }
+
+      /* 图片卡基础样式（.cb-item 系列，被 .combo-pick 复用）*/
+      .cb-item {
+        position: relative;
+        min-width: 0;
+      }
+      .cb-item .cb-thumb {
+        border-radius: var(--r-sm);
+        background: linear-gradient(135deg, #ffe3c2, #ffcf9e);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .cb-item .cb-nm {
+        margin-top: 4px;
+        font-size: var(--fs-tiny);
+        color: var(--text-primary);
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .cb-item .cb-tick {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--primary);
+        color: #fff;
+        border-radius: var(--r-full);
+        border: 2px solid #fff;
+      }
+      .cb-item .cb-tick svg {
+        width: 11px;
+        height: 11px;
+        stroke-width: 3;
+      }
+      /* 商品详情：单品 / 套餐 双 demo 子 tab 切换 */
+      /* 单品/套餐 demo 切换：手机外部悬浮分段控件（仅商品详情页显示）*/
+      .gd-subtabs {
+        display: none;
+        gap: 4px;
+        padding: 5px;
+        background: #fff;
+        border-radius: var(--r-full);
+        box-shadow: var(--shadow-float);
+      }
+      .gd-subtabs.show { display: flex; }
+      .gd-subtabs button {
+        padding: 0 20px;
+        height: 32px;
+        border-radius: var(--r-full);
+        font-size: var(--fs-sm);
+        color: var(--text-secondary);
+        background: transparent;
+        transition: all var(--d-fast) var(--e-default);
+      }
+      .gd-subtabs button.on {
+        background: var(--primary);
+        color: #fff;
+        font-weight: var(--fw-medium);
+      }
+      .gd-demo {
+        display: none;
+        flex: 1;
+        min-height: 0;
+        flex-direction: column;
+      }
+      .gd-demo.active {
+        display: flex;
+      }
+      /* 套餐 demo 专用 */
+      .gd-hero.combo-hero {
+        background: linear-gradient(180deg, #ffe8d6 0%, #ffd9b0 40%, #fff 100%);
+      }
+      .combo-cart {
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-2);
+      }
+      .combo-cart .row {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+      }
+      .combo-cart .row .ico {
+        width: 36px;
+        height: 36px;
+        border-radius: var(--r-sm);
+        background: linear-gradient(135deg, #ffe3c2, #ffcf9e);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+      }
+      .combo-cart .row .meta {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .combo-cart .row .nm {
+        font-size: var(--fs-sm);
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      /* §6.1 每项规格明细行（大杯 · 标准糖 · 正常冰，对齐霸王茶姬已选商品） */
+      .combo-cart .row .spec {
+        font-size: var(--fs-tiny);
+        color: var(--text-tertiary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .combo-cart .row .qty {
+        font-size: var(--fs-xs);
+        color: var(--text-tertiary);
+        flex-shrink: 0;
+      }
+      .combo-cart .row .pr {
+        font-size: var(--fs-sm);
+        color: var(--primary);
+      }
+      .combo-cart .row .del {
+        width: 22px;
+        height: 22px;
+        color: var(--text-disabled);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      /* §6.1 每项「去定制」编辑入口：✏️ + 文字，点击开选规格弹窗（对齐霸王茶姬去定制 / 麦当劳可编辑） */
+      .combo-cart .row .edit {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        flex-shrink: 0;
+        padding: 3px 8px;
+        border-radius: var(--r-full);
+        border: 1px solid var(--primary);
+        color: var(--primary);
+        font-size: var(--fs-xs);
+        cursor: pointer;
+      }
+      .combo-cart .row .edit .i { width: 12px; height: 12px; }
+      /* §6.1 已选条（折叠态）：顶部 ^ 手柄 + 缩略图 + ✏️ + 「已选 N 件 ^」，点开整片上弹的「已选商品」面板（对齐霸王茶姬 #7→#8） */
+      .gd-selbar {
+        position: relative;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: var(--sp-3);
+        padding: 18px var(--sp-4) 14px;
+        background: #fff;
+        border-radius: var(--r-lg) var(--r-lg) 0 0;
+        box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.05);
+        cursor: pointer;
+        transition: background var(--d-fast) var(--e-default);
+      }
+      .gd-selbar:active { background: var(--bg-page); }
+      .gd-selbar .gd-selbar-handle {
+        position: absolute;
+        top: 5px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: var(--text-disabled);
+        display: flex;
+      }
+      .gd-selbar .gd-selbar-handle .i { width: 20px; height: 20px; }
+      .gd-selbar .gd-selbar-thumbs {
+        flex: 1;
+        display: flex;
+        gap: 14px;
+        overflow: hidden;
+        min-width: 0;
+      }
+      .gd-selbar .gd-selbar-thumbs .t {
+        position: relative;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 21px;
+        flex-shrink: 0;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      }
+      .gd-selbar .gd-selbar-thumbs .t .pen {
+        position: absolute;
+        bottom: -3px;
+        right: -3px;
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        background: #fff;
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+      }
+      .gd-selbar .gd-selbar-thumbs .t .pen .i { width: 9px; height: 9px; color: var(--text-secondary); }
+      .gd-selbar .gd-selbar-go {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+        color: var(--text-tertiary);
+      }
+      .gd-selbar .gd-selbar-go .selnum { font-size: var(--fs-sm); color: var(--text-secondary); }
+      .gd-selbar .gd-selbar-go .i { width: 16px; height: 16px; }
+      /* §6.1 底部 dock：上半「已选槽」(折叠缩略图条 ⟷ 展开明细弹窗，同槽互换) + 下半常驻操作栏。操作栏(价格+按钮)独立、与展开收起无关（对齐霸王茶姬 #7→#8） */
+      .gd-dock {
+        position: relative;
+        flex-shrink: 0;
+        z-index: 5;
+      }
+      /* 已选槽：折叠时高度=缩略图条；展开时缩略图条隐藏、槽塌成 0，弹窗/遮罩以槽底（=操作栏顶）为锚往上长 */
+      .gd-dock .gd-sel-stack { position: relative; }
+      /* 透明点击层（非模态）：不压暗背景——展开的不是模态弹窗，只是「类似弹窗外观」的内联展开面板；保留它仅为「点面板外即收起」，不影响底部操作栏 */
+      .gd-dock .gd-sel-mask {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 1400px;
+        background: transparent;
+        visibility: hidden;
+      }
+      .gd-dock.pop-open .gd-sel-mask { visibility: visible; }
+      /* 明细弹窗：bottom:0 → 底边贴操作栏顶；折叠态下滑+隐藏，展开态上长，占据缩略图条原槽位 */
+      .gd-sel-pop {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 2;
+        max-height: 56vh;
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        border-radius: var(--r-lg) var(--r-lg) 0 0;
+        box-shadow: 0 -5px 16px rgba(0, 0, 0, 0.08);
+        transform: translateY(100%);
+        visibility: hidden;
+        transition:
+          transform var(--d-slow) var(--e-enter),
+          visibility 0s linear var(--d-slow);
+      }
+      .gd-dock.pop-open .gd-sel-pop {
+        transform: translateY(0);
+        visibility: visible;
+        transition: transform var(--d-slow) var(--e-enter);
+      }
+      /* 展开时缩略图条隐藏（它就是被展开的对象，由明细弹窗取代）；操作栏不受影响 */
+      .gd-dock.pop-open .gd-selbar { display: none; }
+      /* 操作栏并入 dock：去掉自身上边框/阴影，顶部的圆角+上阴影交给上方的缩略图条 / 明细弹窗，拼成一片 */
+      .gd-dock .gd-ft { border-top: none; box-shadow: none; }
+      /* 表头整行可点收起；右侧 ⌄ 收起钮（内联展开外观，非弹窗 ✕） */
+      .gd-sel-pop .sheet-hd { border-bottom: none; padding-top: var(--sp-3); padding-bottom: var(--sp-2); cursor: pointer; }
+      .gd-sel-pop .sheet-hd .gd-sel-collapse {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-tertiary);
+      }
+      .gd-sel-pop .sheet-hd .gd-sel-collapse .i { width: 20px; height: 20px; }
+      .gd-sel-pop .sheet-hd .t .gd-sel-num {
+        margin-left: 6px;
+        font-size: var(--fs-xs);
+        color: var(--text-tertiary);
+      }
+      .gd-sel-pop .sheet-bd { flex: 1; overflow-y: auto; padding: 0 var(--sp-4) var(--sp-4); }
+      .gd-sel-pop .sheet-bd::-webkit-scrollbar { width: 0; }
+      .gd-sel-pop .gd-sel-group + .gd-sel-group { margin-top: var(--sp-4); }
+      .gd-sel-pop .gd-sel-group.empty { display: none; }
+      .gd-sel-pop .gd-sel-sub {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: var(--fs-xs);
+        color: var(--text-tertiary);
+        margin-bottom: var(--sp-2);
+      }
+      /* 弹窗里缩略图更大、行更松（对齐霸王茶姬已选商品） */
+      .gd-sel-list { gap: var(--sp-3); }
+      .gd-sel-list .row .ico { width: 48px; height: 48px; font-size: 26px; border-radius: var(--r-md); }
+      /* 行内编辑改成圆形 ✏️ 图标钮（对齐霸王茶姬 #8） */
+      .gd-sel-list .row .edit {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        border-radius: 50%;
+        border: 1px solid var(--border);
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .gd-sel-list .row .edit .i { width: 14px; height: 14px; }
+      /* §6.2 / §7.2 必选未齐（对齐麦当劳 image #13）：整组黄色渐变描边 + 外发光，标题内联「您还需选择 N 份」橙色加粗；不弹窗不死按钮 */
+      #page-goods .gd-demo .gd-body > .sg.req-active {
+        border: 2px solid #ffbc0d;
+        background: linear-gradient(180deg, rgba(255, 188, 13, 0.1), rgba(255, 188, 13, 0.02));
+        border-radius: var(--r-md);
+        box-shadow:
+          0 0 0 4px rgba(255, 188, 13, 0.14),
+          0 8px 22px rgba(255, 188, 13, 0.22);
+      }
+      .sg .hd .t .req-hint {
+        margin-left: 6px;
+        color: #f08300;
+        font-weight: var(--fw-semibold);
+        display: none;
+      }
+      .sg .hd .t .req-hint.show { display: inline; }
+      /* 触发瞬间的 3 秒发光脉冲（1s×3），提示注意；脉冲结束后保留描边/提示直到选中 */
+      @keyframes gdReqPulse {
+        0%, 100% { box-shadow: 0 0 0 4px rgba(255, 188, 13, 0.14), 0 8px 22px rgba(255, 188, 13, 0.22); }
+        50% { box-shadow: 0 0 0 9px rgba(255, 188, 13, 0.32), 0 8px 26px rgba(255, 188, 13, 0.42); }
+      }
+      #page-goods .gd-demo .gd-body > .sg.gd-req-flash { animation: gdReqPulse 1s var(--e-default) 3; }
+      /* 加车成功 toast：居中淡入淡出（§ 加车效果）*/
+      .gd-toast {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%) scale(0.9);
+        z-index: 50;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: var(--sp-4) var(--sp-5);
+        min-width: 120px;
+        background: rgba(0, 0, 0, 0.8);
+        color: #fff;
+        border-radius: var(--r-md);
+        font-size: var(--fs-sm);
+        opacity: 0;
+        visibility: hidden;
+        transition:
+          opacity var(--d-normal) var(--e-default),
+          transform var(--d-normal) var(--e-default),
+          visibility 0s linear var(--d-normal);
+      }
+      .gd-toast .i { width: 30px; height: 30px; color: var(--success); }
+      .gd-toast.show {
+        opacity: 1;
+        visibility: visible;
+        transform: translate(-50%, -50%) scale(1);
+        transition:
+          opacity var(--d-normal) var(--e-default),
+          transform var(--d-normal) var(--e-default);
+      }
+      /* §6.1 已包含（固定项）大卡 + 去定制 —— 与可选网格分开（对齐霸王茶姬 #7） */
+      .gd-included {
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-3);
+      }
+      .gd-included .inc-card {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-3);
+        padding: var(--sp-2);
+        border: 1px solid var(--divider);
+        border-radius: var(--r-md);
+      }
+      .gd-included .inc-card .inc-im {
+        width: 60px;
+        height: 60px;
+        border-radius: var(--r-md);
+        font-size: 30px;
+        flex-shrink: 0;
+      }
+      .gd-included .inc-card .inc-meta {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .gd-included .inc-card .inc-meta .nm {
+        font-size: var(--fs-sm);
+        font-weight: var(--fw-medium);
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .gd-included .inc-card .inc-meta .spec { font-size: var(--fs-tiny); color: var(--text-tertiary); }
+      .gd-included .inc-card .inc-meta .qty { font-size: var(--fs-xs); color: var(--text-tertiary); }
+      .gd-included .inc-card .inc-edit {
+        flex-shrink: 0;
+        padding: 6px 16px;
+        border-radius: var(--r-full);
+        border: 1.5px solid var(--primary);
+        background: #fff;
+        color: var(--primary);
+        font-size: var(--fs-sm);
+        cursor: pointer;
+      }
+      /* 套餐子商品选择：等宽方图网格（整改态，§6.4）*/
+      .combo-pick {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--sp-2);
+      }
+      .combo-pick .cb-item .cb-thumb {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        font-size: 24px;
+      }
+      .combo-pick .cb-item .cb-tick {
+        top: 4px;
+        right: 4px;
+        width: 18px;
+        height: 18px;
+      }
+      .combo-pick .cb-item .cb-tick svg {
+        width: 11px;
+        height: 11px;
+      }
+      /* §6.2 必选未选高亮：黄边 + 浅底 */
+      .sg.need-hl {
+        margin: 0 var(--sp-4);
+        padding: var(--sp-3);
+        border: 1.5px solid var(--warning);
+        border-radius: var(--r-md);
+        background: rgba(255, 191, 0, 0.06);
+      }
+      /* §1.5 的逐组 border-top（含 #page-goods，特异性更高）会把黄框顶边改成灰线，这里把整圈黄框还原（特异性更高） */
+      #page-goods .gd-demo .gd-body > .sg.need-hl { border: 1.5px solid var(--warning); }
+      .sg.need-hl .hd .need {
+        color: #a06800;
+      }
+
+      /* ===== 商品详情 现状 ⇄ 整改 联动（off-KEY 加在 #page-goods，勾选=整改 / 取消=现状）===== */
+      #page-goods.off-share .share-fab { display: none; }
+      #page-goods.off-ftshadow .gd-ft { box-shadow: none; }
+      #page-goods.off-rspad .gd-ft .bot-row .rs { padding: 0; }
+      #page-goods.off-desccolor .gd-intro .ds em {
+        color: var(--text-tertiary);
+        font-weight: var(--fw-regular);
+      }
+      /* §4.1 现状：图片规格卡选中=突兀黑边（取消主题色描边）*/
+      #page-goods.off-selcolor .combo-pick.cups .cb-item.sel .cb-thumb { outline-color: #333; }
+      /* §4.2 现状：选中 ✓ 角标负偏移溢出卡外（iOS 明显）*/
+      #page-goods.off-tickoverflow .combo-pick.cups .cb-item .cb-tick { top: -8px; right: -8px; width: 22px; height: 22px; }
+      #page-goods.off-tickoverflow .combo-pick.cups .cb-item .cb-tick svg { width: 13px; height: 13px; }
+      /* §6.1 整改：底部统一「已选条」替代顶部「已包含」大卡 → 默认隐藏顶部大卡 */
+      #page-goods .gd-included-sec { display: none; }
+      /* §6.1 现状：无底部已选条，改回顶部「已包含」大卡各自展示 */
+      #page-goods.off-combocart .gd-sec-cart { display: none; }
+      #page-goods.off-combocart .gd-included-sec { display: block; }
+      /* §6.2 现状：必选无黄边高亮 */
+      #page-goods.off-needhl .sg.need-hl {
+        margin: 0;
+        padding: var(--sp-4);
+        border-color: transparent;
+        background: #fff;
+      }
+      #page-goods.off-needhl .sg.need-hl .hd .need { color: var(--text-disabled); }
+      /* §6.4 现状：套餐子商品大小不一致（卡宽 / 图比例 / 角标尺寸乱 + 角标溢出） */
+      #page-goods.off-evengrid .is-combo .combo-pick {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 6px;
+      }
+      #page-goods.off-evengrid .is-combo .combo-pick .cb-item:nth-child(3n + 1) { flex: 0 0 26%; }
+      #page-goods.off-evengrid .is-combo .combo-pick .cb-item:nth-child(3n + 2) { flex: 0 0 40%; }
+      #page-goods.off-evengrid .is-combo .combo-pick .cb-item:nth-child(3n + 3) { flex: 0 0 22%; }
+      #page-goods.off-evengrid .is-combo .combo-pick .cb-item .cb-thumb { aspect-ratio: auto; }
+      #page-goods.off-evengrid .is-combo .combo-pick .cb-item:nth-child(3n + 1) .cb-thumb { height: 44px; font-size: 20px; }
+      #page-goods.off-evengrid .is-combo .combo-pick .cb-item:nth-child(3n + 2) .cb-thumb { height: 58px; font-size: 30px; }
+      #page-goods.off-evengrid .is-combo .combo-pick .cb-item:nth-child(3n + 3) .cb-thumb { height: 38px; font-size: 16px; }
+      #page-goods.off-evengrid .is-combo .combo-pick .cb-item .cb-tick { top: -6px; right: -6px; width: 22px; height: 22px; }
+      #page-goods.off-evengrid .is-combo .combo-pick .cb-item:nth-child(3n + 3) .cb-tick { width: 15px; height: 15px; }
+
+      /* ===== 商品图：沿用点单页「渐变色块 + emoji」风格（非截图位图）===== */
+      .cb-thumb{position:relative;font-size:34px;}
+      .combo-pick.cups .cb-item .cb-thumb{aspect-ratio:3/4;font-size:40px;}
+      .combo-pick .cb-item.sel .cb-thumb{outline:2px solid var(--primary);outline-offset:-2px;}
+      .combo-cart .row .ico{font-size:20px;}
+      .gd-hero.combo-hero{background:linear-gradient(180deg,#ffe2bd 0%,#f0a55a 55%,#fff 100%);}
+      .gd-hero.combo-hero .pour{font-size:150px;}
+      .gd-hero.single-hero{background:linear-gradient(180deg,#eaf4cc 0%,#bcdd8a 48%,#fff 100%);}
+      .gd-hero.single-hero .pour{font-size:150px;}
+      /* 固定顶栏：返回 + 分享 + 微信胶囊（不随内容滚动，对齐真机 fixed navbar）*/
+      .gd-topbar{position:absolute;top:44px;left:0;right:0;z-index:60;display:flex;align-items:center;justify-content:space-between;padding:6px var(--sp-4);}
+      .gd-topbar .back-btn{width:32px;height:32px;border-radius:var(--r-full);background:rgba(0,0,0,0.4);color:#fff;display:flex;align-items:center;justify-content:center;}
+      .gd-topbar .cap-group{display:flex;align-items:center;gap:8px;}
+      .gd-topbar .share-fab{width:36px;height:36px;border-radius:var(--r-full);background:rgba(255,255,255,0.95);color:var(--text-primary);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-float);}
+      .gd-topbar .mini-cap{width:88px;height:32px;border-radius:var(--r-full);background:rgba(0,0,0,0.12);display:flex;align-items:center;justify-content:space-around;color:#fff;}
+      .gd-topbar .mini-cap svg{width:16px;height:16px;}
+      .cb-thumb.g-red,.ico.g-red{background:linear-gradient(135deg,#ff7b5a,#d93a3a)!important;}
+      .cb-thumb.g-amber,.ico.g-amber{background:linear-gradient(135deg,#ffb347,#d97f21)!important;}
+      .cb-thumb.g-cream,.ico.g-cream{background:linear-gradient(135deg,#ffe6b3,#f0c27b)!important;}
+      .cb-thumb.g-forest,.ico.g-forest{background:linear-gradient(135deg,#a8c080,#708a4e)!important;}
+      .cb-thumb.g-plum,.ico.g-plum{background:linear-gradient(135deg,#c4a2cc,#7a5c82)!important;}
+      .cb-thumb.g-mint,.ico.g-mint{background:linear-gradient(135deg,#b6e3c6,#6fb98f)!important;}
+
+      /* 商品详情 可点交互：选规格/选项卡片 */
+      .combo-pick[data-pick] .cb-item{cursor:pointer;transition:transform var(--d-fast) var(--e-default);}
+      .combo-pick[data-pick] .cb-item:active{transform:scale(0.96);}
+      .gd-ft .stp button,.combo-cart .row .del{cursor:pointer;}
 
       /* 底部双层栏 — 忠实现状 */
       .gd-ft {
@@ -2157,6 +2884,23 @@
         color: var(--text-tertiary);
         font-style: normal;
       }
+      /* 整改项白话说明（现状 → 整改），给非技术读者看懂每条改什么 */
+      .panel .it label .it-desc {
+        display: block;
+        margin-top: 4px;
+        font-size: var(--fs-tiny);
+        line-height: 1.55;
+        color: var(--text-tertiary);
+      }
+      .panel .it label .it-desc b {
+        color: var(--text-secondary);
+        font-weight: var(--fw-medium);
+      }
+      .panel .it label .it-desc .ar {
+        color: var(--primary);
+        padding: 0 3px;
+        font-weight: var(--fw-medium);
+      }
       /* 【v5】后台同步色标 tag —— 同步 PRD v3「后台同步」标注 */
       .panel .it-tag {
         display: inline-block;
@@ -2182,6 +2926,14 @@
       .panel .it-tag.t-api {
         background: rgba(255, 80, 78, 0.12);
         color: var(--danger);
+      }
+      .panel .it-tag.t-design {
+        background: rgba(124, 92, 252, 0.14);
+        color: #6a4fd0;
+      }
+      .panel .it-tag.t-brand {
+        background: rgba(24, 144, 255, 0.12);
+        color: #1677d9;
       }
       .panel .it-legend {
         display: flex;
@@ -3144,6 +3896,10 @@
           <line x1="6" y1="6" x2="18" y2="18" />
           <line x1="18" y1="6" x2="6" y2="18" />
         </symbol>
+        <symbol id="i-edit" viewBox="0 0 24 24">
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z" />
+        </symbol>
         <symbol id="i-home" viewBox="0 0 24 24">
           <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
           <polyline points="9 22 9 12 15 12 15 22" />
@@ -3227,6 +3983,10 @@
       </header>
 
       <main class="stage">
+        <div class="gd-subtabs" id="gd-switch">
+          <button class="on" onclick="goodsDemo(this,'single')">单品 · 多规格</button>
+          <button onclick="goodsDemo(this,'combo')">套餐</button>
+        </div>
         <div class="device">
           <div class="screen">
             <!-- ============== 点单页 ============== -->
@@ -3696,78 +4456,70 @@
                 </div>
               </div>
 
-              <!-- 吸底购物车：红购物袋 + 金额 + 结算 -->
-              <div class="cart">
-                <div class="cart-row">
-                  <button class="cart-bag" onclick="toggleSheet()">
-                    <svg class="bag-ic" viewBox="0 0 32 32">
-                      <use href="#i-bag" />
-                    </svg>
-                    <span class="bd">2</span>
-                  </button>
-                  <div class="cart-mid">
-                    <div class="pr">
-                      <span class="sym">¥</span>
-                      <span class="num">34.80</span>
-                    </div>
-                    <div class="saved">已优惠 ¥ 4.90</div>
-                  </div>
-                  <button class="cart-cta" id="cart-cta" onclick="onCheckout()">
-                    <span class="cta-txt">去结算</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- 购物车半屏弹层 §6：保留浮现动效，叠加工具条/优惠券/卡片化/折扣 footer -->
-              <div class="sheet-wrap" id="cart-sheet">
-                <div class="mask" onclick="toggleSheet()"></div>
-                <div class="sheet tall">
-                  <div class="sheet-hd">
-                    <div class="t">购物车 · 2 件</div>
-                    <!-- 【整改 §6.6】顶部工具条：全选 + 清空 -->
-                    <div class="cart-tools">
-                      <button class="sel-all on" onclick="toggleSelAll(this)">
-                        <span class="ck-mini"><svg class="i ix" style="stroke-width: 3"><use href="#i-check" /></svg></span>
-                        全选
-                      </button>
-                      <button class="clr">
-                        <svg class="i ix"><use href="#i-refresh" /></svg>
-                        清空
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- 【整改 §6.6 / §6.8】已享折扣条 -->
-                  <div class="cart-discount">
-                    <svg class="i ix"><use href="#i-ticket" /></svg>
-                    已享折扣优惠，共减免 <b>¥4.90</b>
-                  </div>
-
-                  <!-- 【整改 §6.7】优惠券入口 -->
-                  <div class="cart-coupon">
-                    <span class="cc-left">
-                      <svg class="i ix"><use href="#i-ticket" /></svg>
-                      优惠券
-                    </span>
-                    <span class="cc-right">
-                      2 张可用
-                      <svg class="i ix"><use href="#i-right" /></svg>
-                    </span>
-                  </div>
-
-                  <!-- 【整改 §6.9】商品行卡片化（由真实购物车状态渲染） -->
-                  <div class="sheet-bd"></div>
-
-                  <!-- 【整改 §6.8】折扣价 footer -->
-                  <div class="cart-foot">
-                    <div class="cf-price">
-                      <div class="line1">
-                        <span class="cnt">共 2 件</span> 实付
-                        <span class="sym">¥</span><span class="num">34.80</span>
+              <!-- 吸底购物车 dock：上半为购物车明细展开槽，下半为常驻吸底栏。结构同详情页已选 dock，也对齐小程序源码 MenuBottom（吸底栏 zIndex 高于弹层、始终可见；弹层从其上方升起；无重复结算按钮）§6 -->
+              <div class="cart-dock">
+                <!-- 购物车明细：从吸底栏上方就地展开（非模态、不压暗；点栏外/购物袋/⌄ 收起）-->
+                <div class="cart-stack">
+                  <div class="cart-pop-catch" onclick="hideCartPop()"></div>
+                  <div class="cart-pop" id="cart-sheet">
+                    <div class="sheet-hd">
+                      <div class="t">购物车 · 2 件</div>
+                      <!-- 【整改 §6.6】顶部工具条：全选 + 清空 + 收起 -->
+                      <div class="cart-tools">
+                        <button class="sel-all on" onclick="toggleSelAll(this)">
+                          <span class="ck-mini"><svg class="i ix" style="stroke-width: 3"><use href="#i-check" /></svg></span>
+                          全选
+                        </button>
+                        <button class="clr">
+                          <svg class="i ix"><use href="#i-refresh" /></svg>
+                          清空
+                        </button>
+                        <button class="cart-collapse" onclick="hideCartPop()"><svg class="i ix"><use href="#i-down" /></svg></button>
                       </div>
-                      <div class="line2">已享折扣 -¥4.90</div>
                     </div>
-                    <button class="cf-cta" onclick="onCheckout()">去结算</button>
+
+                    <!-- 【整改 §6.6 / §6.8】已享折扣条 -->
+                    <div class="cart-discount">
+                      <svg class="i ix"><use href="#i-ticket" /></svg>
+                      已享折扣优惠，共减免 <b>¥4.90</b>
+                    </div>
+
+                    <!-- 【整改 §6.7】优惠券入口 -->
+                    <div class="cart-coupon">
+                      <span class="cc-left">
+                        <svg class="i ix"><use href="#i-ticket" /></svg>
+                        优惠券
+                      </span>
+                      <span class="cc-right">
+                        2 张可用
+                        <svg class="i ix"><use href="#i-right" /></svg>
+                      </span>
+                    </div>
+
+                    <!-- 【整改 §6.9】商品行卡片化（由真实购物车状态渲染） -->
+                    <div class="sheet-bd"></div>
+                  </div>
+                </div>
+
+                <!-- 常驻吸底栏：红购物袋 + 金额 + 去结算（不参与展开收起，价格/结算始终在此）-->
+                <div class="cart">
+                  <div class="cart-row">
+                    <button class="cart-bag" onclick="toggleSheet()">
+                      <svg class="bag-ic" viewBox="0 0 32 32">
+                        <use href="#i-bag" />
+                      </svg>
+                      <span class="bd">2</span>
+                    </button>
+                    <div class="cart-mid">
+                      <div class="pr">
+                        <span class="sym">¥</span>
+                        <span class="num">34.80</span>
+                      </div>
+                      <div class="saved">已优惠 ¥ 4.90</div>
+                    </div>
+                    <button class="cart-cta" id="cart-cta" onclick="onCheckout()">
+                      <span class="cta-txt">去结算</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -3915,140 +4667,250 @@
                 </span>
               </div>
 
-              <div class="gd-body">
-                <div class="gd-hero">
-                  <div class="top-act">
-                    <button class="back-btn" onclick="switchPage('menu')">
-                      <svg class="i is" style="stroke-width: 2.5"><use href="#i-back" /></svg>
-                    </button>
-                    <div class="mini-cap">
-                      <svg><use href="#i-ellipsis" /></svg>
-                      <svg><use href="#i-circle" /></svg>
-                    </div>
-                  </div>
-                  <div class="pour">🍵</div>
+              <!-- 固定顶栏：返回 + 分享 + 微信胶囊（沉浸式，不随内容滚动）。返回 = 加车并返回点单页（必选未齐则定位高亮、不离开）-->
+              <div class="gd-topbar">
+                <button class="back-btn" onclick="gdAddToCart()">
+                  <svg class="i is" style="stroke-width: 2.5"><use href="#i-back" /></svg>
+                </button>
+                <div class="cap-group">
                   <button class="share-fab" title="分享 · 生成美图">
                     <svg class="i is"><use href="#i-share" /></svg>
                   </button>
-                  <div class="cal">每杯约 <b>128 kcal</b> · 低卡</div>
-                </div>
-
-                <div class="gd-intro">
-                  <div class="nm">茉莉蜜茶</div>
-                  <span class="cat-chip">含茶</span>
-                  <div class="ds">
-                    采用<em>广西横县茉莉绿茶</em>，<em>五次窨制</em>而成，茶香清新，口感香甜。
+                  <div class="mini-cap">
+                    <svg><use href="#i-ellipsis" /></svg>
+                    <svg><use href="#i-circle" /></svg>
                   </div>
                 </div>
-
-                <div class="sg">
-                  <div class="hd">
-                    <div class="t">加料<span class="selnum">(已选 1 / 3)</span></div>
-                    <div class="scroll-tip">
-                      <svg class="i ix"><use href="#i-up" /></svg>
-                      上滑调整口味
-                    </div>
-                  </div>
-                  <div class="addons">
-                    <div class="addon">脆波波（限冷饮）+¥1</div>
-                    <div class="addon on">
-                      <button class="stp-btn sub">
-                        <svg class="i ix" style="stroke-width: 2.5"><use href="#i-minus" /></svg>
-                      </button>
-                      <span class="nm">椰果 +¥1</span>
-                      <button class="stp-btn">
-                        <svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg>
-                      </button>
-                      <span class="bd">3</span>
-                    </div>
-                    <div class="addon">黑糖珍珠 +¥1</div>
-                    <div class="addon">黑糖冻 +¥1</div>
-                    <div class="addon">芋圆 +¥2</div>
-                  </div>
-                </div>
-
-                <div class="sg">
-                  <div class="hd">
-                    <div class="t">规格<span class="need">（任选 1 份）</span></div>
-                  </div>
-                  <div class="opts">
-                    <button class="opt on">大杯</button>
-                  </div>
-                </div>
-
-                <div class="sg">
-                  <div class="hd">
-                    <div class="t">免费选料<span class="need">（任选 1 份）</span></div>
-                  </div>
-                  <div class="opts">
-                    <button class="opt on">
-                      <svg class="i ix star"><use href="#i-star" /></svg>
-                      纯茶
-                    </button>
-                    <button class="opt">黑糖珍珠</button>
-                    <button class="opt">椰果</button>
-                  </div>
-                </div>
-
-                <div class="sg">
-                  <div class="hd">
-                    <div class="t">温度选择<span class="need">（任选 1 份）</span></div>
-                  </div>
-                  <div class="opts">
-                    <button class="opt on">
-                      <svg class="i ix star"><use href="#i-star" /></svg>
-                      正常冰
-                    </button>
-                    <button class="opt">少冰</button>
-                    <button class="opt">去冰</button>
-                  </div>
-                </div>
-
-                <div class="sg">
-                  <div class="hd">
-                    <div class="t">甜度<span class="need">（任选 1 份）</span></div>
-                  </div>
-                  <div class="opts">
-                    <button class="opt">无糖</button>
-                    <button class="opt">三分甜</button>
-                    <button class="opt on">
-                      <svg class="i ix star"><use href="#i-star" /></svg>
-                      标准糖
-                    </button>
-                    <button class="opt">七分甜</button>
-                    <button class="opt">全糖</button>
-                  </div>
-                </div>
-
-                <div style="height: var(--sp-4); background: #fff"></div>
               </div>
 
-              <!-- 底部双层栏：上行价格+步进器 / 下行恢复默认+加入购物车 -->
-              <div class="gd-ft">
-                <div class="top-row">
-                  <div class="tot">
-                    <div class="pr">
-                      <span class="sym">¥</span>
-                      <span class="num">7</span>
-                    </div>
-                    <div class="brief">大杯; 纯茶; 正常冰; 标准糖; 椰果 +×3</div>
+              <!-- ===== demo 1：单品·多规格 — 自由·超大杯柠檬茶（渐变色块+emoji，同点单页）===== -->
+              <div class="gd-demo is-single active">
+                <div class="gd-body">
+                  <div class="gd-hero single-hero">
+                    <div class="pour">🧋</div>
                   </div>
-                  <div class="stp">
-                    <button class="mi">
-                      <svg class="i ix" style="stroke-width: 2.5"><use href="#i-minus" /></svg>
-                    </button>
-                    <span class="q">1</span>
-                    <button class="pl">
-                      <svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg>
-                    </button>
+
+                  <div class="gd-intro">
+                    <div class="nm">自由 · 超大杯柠檬茶</div>
+                    <span class="cat-chip" style="color: var(--danger); background: rgba(255, 80, 78, 0.1)">限时特价 ¥19.9 起</span>
+                    <div class="ds">经典柠檬茶任意选，<em>大大杯，超过瘾！</em></div>
+                  </div>
+                  <div class="sg">
+                    <div class="hd"><div class="t">超大杯 8 选 1<span class="need">（任选 1 份）</span></div></div>
+                    <div class="combo-pick cups" data-pick="single">
+                      <div class="cb-item"><div class="cb-thumb g-red">🧋</div><div class="cb-nm">经典锡兰柠檬茶</div></div>
+                      <div class="cb-item"><div class="cb-thumb g-forest">🧋</div><div class="cb-nm">招牌六堡柠檬茶</div></div>
+                      <div class="cb-item"><div class="cb-thumb g-cream">🧋</div><div class="cb-nm">手打茉莉柠檬茶</div></div>
+                      <div class="cb-item"><div class="cb-thumb g-amber">🧋</div><div class="cb-nm">手打鸭屎香柠檬茶</div></div>
+                      <div class="cb-item"><div class="cb-thumb g-mint">🧋</div><div class="cb-nm">手打泰绿柠檬茶</div></div>
+                      <div class="cb-item sel"><div class="cb-thumb g-plum">🧋</div><span class="cb-tick"><svg class="i ix"><use href="#i-check" /></svg></span><div class="cb-nm">夏日椰一下</div></div>
+                    </div>
+                  </div>
+
+                  <!-- 做法：甜度（单选）— §1.5 与规格组形成分区节奏 -->
+                  <div class="sg">
+                    <div class="hd"><div class="t">甜度<span class="need">（任选 1 份）</span></div></div>
+                    <div class="opts gd-flavor">
+                      <button class="opt">标准糖</button>
+                      <button class="opt on">少糖</button>
+                      <button class="opt">半糖</button>
+                      <button class="opt">无糖</button>
+                    </div>
+                  </div>
+
+                  <!-- 做法：冰度（单选）-->
+                  <div class="sg">
+                    <div class="hd"><div class="t">冰度<span class="need">（任选 1 份）</span></div></div>
+                    <div class="opts gd-flavor">
+                      <button class="opt on">正常冰</button>
+                      <button class="opt">少冰</button>
+                      <button class="opt">去冰</button>
+                      <button class="opt">常温</button>
+                    </div>
+                  </div>
+
+                  <!-- 额外加料（多选 + 数量）— 霸王茶姬「额外加料」整行式：名(含 ｜desc) + 价格固定列 + 控件固定列，无浮标 badge §5.1/§5.3/§5.6 -->
+                  <div class="sg">
+                    <div class="hd"><div class="t">额外加料<span class="need">小料默认加入饮品中</span></div></div>
+                    <div class="gd-addons">
+                      <div class="ad-card" data-nm="北海道牛乳奶冻｜热饮易化" data-ap="¥2"></div>
+                      <div class="ad-card" data-nm="茶冻冻" data-ap="¥1"></div>
+                      <div class="ad-card" data-nm="脆波波｜限冷饮" data-ap="¥3"></div>
+                      <div class="ad-card dis" data-nm="抹茶奶盖｜热饮易化" data-ap="¥5"></div>
+                      <div class="ad-card dis" data-nm="芝士奶盖｜热饮易化" data-ap="¥5"></div>
+                    </div>
+                  </div>
+
+                  <div style="height: var(--sp-4); background: #fff"></div>
+                </div>
+                <div class="gd-ft">
+                  <div class="top-row">
+                    <div class="tot">
+                      <div class="pr"><span class="sym">¥</span><span class="num">19.9</span><span style="font-size: var(--fs-xs); color: var(--text-tertiary); text-decoration: line-through; margin-left: 6px">¥28</span></div>
+                      <div class="brief">1x 1000ml 夏日椰一下</div>
+                    </div>
+                    <div class="stp">
+                      <button class="mi"><svg class="i ix" style="stroke-width: 2.5"><use href="#i-minus" /></svg></button>
+                      <span class="q">1</span>
+                      <button class="pl"><svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg></button>
+                    </div>
+                  </div>
+                  <div class="bot-row">
+                    <button class="rs"><svg class="i is"><use href="#i-refresh" /></svg>恢复默认</button>
+                    <button class="add" onclick="gdAddToCart()">加入购物车</button>
                   </div>
                 </div>
-                <div class="bot-row">
-                  <button class="rs">
-                    <svg class="i is"><use href="#i-refresh" /></svg>
-                    恢复默认
-                  </button>
-                  <button class="add">加入购物车</button>
+              </div>
+
+              <!-- ===== demo 2：套餐 — 吉胜克 韩式炸鸡双人餐（渐变色块+emoji，同点单页）===== -->
+              <div class="gd-demo is-combo">
+                <div class="gd-body">
+                  <div class="gd-hero combo-hero">
+                    <div class="pour">🍗</div>
+                  </div>
+
+                  <div class="gd-intro">
+                    <div class="nm">韩式炸鸡双人餐</div>
+                    <span class="cat-chip">套餐</span>
+                    <div class="ds">两人畅享 · 韩式炸鸡 + 小食 + <em>饮品 2 选 1</em>。</div>
+                  </div>
+
+                  <!-- 已包含（套餐固定项 · 大卡 + 去定制）—— §6.1 整改时由底部已选条替代、隐藏此区；现状(取消 §6.1)才显示 -->
+                  <div class="sg gd-included-sec">
+                    <div class="hd"><div class="t">已包含<span class="selnum">（套餐已含 · 点去定制改规格）</span></div></div>
+                    <div class="gd-included">
+                      <div class="inc-card" data-nm="吉乐鸡块" data-spec="标准份 · 番茄酱" data-g="g-amber" data-em="🍗">
+                        <div class="inc-im ico g-amber">🍗</div>
+                        <div class="inc-meta"><div class="nm">吉乐鸡块</div><div class="spec">标准份 · 番茄酱</div><div class="qty">x1</div></div>
+                        <button class="inc-edit" onclick="openCustomize('吉乐鸡块')">去定制</button>
+                      </div>
+                      <div class="inc-card" data-nm="黄金粗薯（大）" data-spec="大份 · 微辣" data-g="g-cream" data-em="🍟">
+                        <div class="inc-im ico g-cream">🍟</div>
+                        <div class="inc-meta"><div class="nm">黄金粗薯（大）</div><div class="spec">大份 · 微辣</div><div class="qty">x1</div></div>
+                        <button class="inc-edit" onclick="openCustomize('黄金粗薯（大）')">去定制</button>
+                      </div>
+                      <div class="inc-card" data-nm="【双拼升级】韩式炸鸡" data-spec="原味 + 香辣 双拼 · 标准份" data-g="g-red" data-em="🍗">
+                        <div class="inc-im ico g-red">🍗</div>
+                        <div class="inc-meta"><div class="nm">【双拼升级】韩式炸鸡</div><div class="spec">原味 + 香辣 双拼 · 标准份</div><div class="qty">x1</div></div>
+                        <button class="inc-edit" onclick="openCustomize('【双拼升级】韩式炸鸡')">去定制</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 可选组 ↓↓↓ -->
+                  <!-- 饮品：必选 2 选 1（§6.2 必选黄边高亮）-->
+                  <div class="sg need-hl">
+                    <div class="hd"><div class="t">饮品<span class="need">（2 选 1 · 还需选 1 份）</span></div></div>
+                    <div class="combo-pick" data-pick="single">
+                      <div class="cb-item" data-spec="大杯 · 标准糖 · 正常冰"><div class="cb-thumb g-plum">🧋</div><div class="cb-nm">生椰拿铁</div></div>
+                      <div class="cb-item" data-spec="大杯 · 五分糖 · 去冰"><div class="cb-thumb g-cream">🧋</div><div class="cb-nm">茉莉柠檬茶</div></div>
+                    </div>
+                  </div>
+
+                  <!-- 加料：2 列变体「一行两个」（套餐用，区别于单品整行式）§5 -->
+                  <div class="sg">
+                    <div class="hd"><div class="t">加料<span class="need">（可选 · 一行两个）</span></div></div>
+                    <div class="gd-addons two">
+                      <div class="ad-card" data-nm="加芝士片" data-ap="¥3"></div>
+                      <div class="ad-card" data-nm="加培根" data-ap="¥4"></div>
+                      <div class="ad-card" data-nm="加煎蛋" data-ap="¥2"></div>
+                      <div class="ad-card" data-nm="加香肠" data-ap="¥3"></div>
+                    </div>
+                  </div>
+
+                  <div style="height: var(--sp-4); background: #fff"></div>
+                </div>
+
+                <!-- 底部 dock：上半为「已选槽」(折叠=缩略图条 / 展开=已选商品明细，同一槽位互换)，下半为常驻操作栏。操作栏(价格+按钮)独立、与展开收起无关 §6.1 -->
+                <div class="gd-dock">
+                  <!-- 已选槽：缩略图条 ⟷ 明细弹窗 共用此槽，钉在操作栏正上方 -->
+                  <div class="gd-sel-stack">
+                    <!-- 遮罩：展开时只压暗上方内容（操作栏保持高亮可点）-->
+                    <div class="gd-sel-mask" onclick="hideSelPop()"></div>
+                    <!-- 展开态：「已选商品」明细，从缩略图条所在槽位就地长出（非模态弹窗：不压暗背景）。点表头 / 右侧 ⌄ / 缩略图条收起 -->
+                    <div class="gd-sel-pop" id="gd-selected-pop">
+                      <div class="sheet-hd" onclick="hideSelPop()">
+                        <div class="t">已选商品<span class="gd-sel-num">(3 / 4 件)</span></div>
+                        <button class="gd-sel-collapse" onclick="hideSelPop()">
+                          <svg class="i ix"><use href="#i-down" /></svg>
+                        </button>
+                      </div>
+                      <div class="sheet-bd">
+                        <div class="gd-sel-group gd-sel-grp-fixed">
+                          <div class="gd-sel-sub">已包含<span class="gd-sel-cnt"></span></div>
+                          <div class="combo-cart gd-sel-list gd-sel-fixed"><!-- JS 实时生成：固定项，仅可编辑 --></div>
+                        </div>
+                        <div class="gd-sel-group gd-sel-grp-opt">
+                          <div class="gd-sel-sub">可选<span class="gd-sel-cnt"></span></div>
+                          <div class="combo-cart gd-sel-list gd-sel-opt"><!-- JS 实时生成：可选组已选项 --></div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- 折叠态：缩略图条；点它展开成上面的明细弹窗（同槽位互换，展开时本条隐藏）对齐霸王茶姬 #7→#8 §6.1 -->
+                    <div class="sg gd-sec-cart gd-selbar" onclick="toggleSelPop()">
+                      <div class="gd-selbar-handle"><svg class="i ix"><use href="#i-up" /></svg></div>
+                      <div class="gd-selbar-thumbs"><!-- JS 小圆缩略图 + ✏️ --></div>
+                      <div class="gd-selbar-go"><span class="selnum">已选 0 件</span><svg class="i ix"><use href="#i-up" /></svg></div>
+                    </div>
+                  </div>
+
+                  <!-- 操作栏（常驻、独立：价格 + 数量 + 恢复默认 + 加购，与展开收起无关）-->
+                  <div class="gd-ft">
+                    <div class="top-row">
+                      <div class="tot">
+                        <div class="pr"><span class="sym">¥</span><span class="num">38</span></div>
+                        <div class="brief">吉乐鸡块; 黄金粗薯(大); 双拼升级韩式炸鸡</div>
+                      </div>
+                      <div class="stp">
+                        <button class="mi"><svg class="i ix" style="stroke-width: 2.5"><use href="#i-minus" /></svg></button>
+                        <span class="q">1</span>
+                        <button class="pl"><svg class="i ix" style="stroke-width: 2.5"><use href="#i-plus" /></svg></button>
+                      </div>
+                    </div>
+                    <div class="bot-row">
+                      <button class="rs"><svg class="i is"><use href="#i-refresh" /></svg>恢复默认</button>
+                      <button class="add" onclick="gdAddToCart()">加入购物车</button>
+                    </div>
+                  </div>
+                </div>
+                <!-- 加车提示 toast（套餐 / 单品共用，居中淡入淡出）-->
+              </div>
+
+              <!-- 加车成功提示（§ 加车效果）-->
+              <div class="gd-toast" id="gd-toast"><svg class="i is" style="stroke-width: 2.5"><use href="#i-check" /></svg><span>已加入购物车</span></div>
+
+              <!-- §6.1 套餐子项「去定制」弹窗：点已选行的「去定制」打开，改该子项 规格/口味/加料（复用选规格弹窗形态，机制对应源码 SkuAttrsSelector + editItemSku）-->
+              <div class="sheet-wrap" id="gd-spec-sheet">
+                <div class="mask" onclick="hideSheet('gd-spec-sheet')"></div>
+                <div class="sheet">
+                  <div class="spec-hd">
+                    <div class="spec-im g-amber"><span class="em">🍗</span></div>
+                    <div class="spec-meta">
+                      <div class="nm">吉乐鸡块 · 去定制</div>
+                      <div class="pr"><span class="cur" style="color: var(--text-tertiary); font-size: var(--fs-xs)">套餐内 · 改规格不加价</span></div>
+                    </div>
+                    <button class="spec-close" onclick="hideSheet('gd-spec-sheet')">
+                      <svg class="i is" style="stroke-width: 2.5"><use href="#i-close" /></svg>
+                    </button>
+                  </div>
+                  <div class="spec-bd">
+                    <div class="sg">
+                      <div class="hd"><div class="t">份量<span class="need">（任选 1 份）</span></div></div>
+                      <div class="opts gd-flavor"><button class="opt on">标准</button><button class="opt">加大 +¥3</button></div>
+                    </div>
+                    <div class="sg">
+                      <div class="hd"><div class="t">口味<span class="need">（任选 1 份）</span></div></div>
+                      <div class="opts gd-flavor"><button class="opt on">原味</button><button class="opt">香辣</button><button class="opt">藤椒</button></div>
+                    </div>
+                    <div class="sg">
+                      <div class="hd"><div class="t">蘸酱<span class="need">（任选 1 份）</span></div></div>
+                      <div class="opts gd-flavor"><button class="opt on">番茄酱</button><button class="opt">沙拉酱</button><button class="opt">蜂蜜芥末</button></div>
+                    </div>
+                  </div>
+                  <div class="spec-ft">
+                    <div class="tot" style="color: var(--text-tertiary); font-size: var(--fs-sm)">套餐内 · 不加价</div>
+                    <button class="spec-add" onclick="hideSheet('gd-spec-sheet')">确定</button>
+                  </div>
                 </div>
               </div>
             </section>
@@ -4316,107 +5178,183 @@
         <details data-page="menu" open>
           <summary>§1 顶部区域 <span class="c"><span class="done" data-counter="c1-1">0</span> / 5</span></summary>
           <div class="its" data-group="c1-1">
-            <div class="it"><input type="checkbox" id="m101" checked /><label for="m101"><b>§1.1 第一行控件统一 32px 胶囊 + 字号 13px</b> <em>(pin / 搜索 / 系统胶囊对齐)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it"><input type="checkbox" id="m102" checked /><label for="m102"><b>§1.2 堂食 / 外卖切换对齐规整</b> <em>(导航栏标题位·左对齐+胶囊化，与系统胶囊两端对齐)</em> <span class="it-tag t-schema">🗄 schema?</span></label></div>
-            <div class="it"><input type="checkbox" id="m103" checked /><label for="m103"><b>§1.3 距离前位置小图标</b> <em>(霸王茶姬做法)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it"><input type="checkbox" id="m104" checked /><label for="m104"><b>§1.4 收藏门店爱心（空心♡ / 实心♥ 跟主题）</b> <em>(可点击切换)</em> <span class="it-tag t-api">🔌 API</span></label></div>
-            <div class="it"><input type="checkbox" id="m105" checked /><label for="m105"><b>§1.5 制作中指示嵌入「距离」行（参考霸王茶姬）</b> <em>(内联 pill 与距离同排 · 数字突出 + 流光进度条 + 三态色阶；店名整名独占一行不被挤)</em> <span class="it-tag t-schema">🗄 schema</span></label></div>
+            <div class="it"><input type="checkbox" id="m101" checked /><label for="m101"><b>§1.1 第一行控件统一 32px 胶囊 + 字号 13px</b> <em>(pin / 搜索 / 系统胶囊对齐)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 第一行「好友拼单」「搜索框」和右侧微信控件高度 / 圆角 / 字号不一,参差不齐。 <span class="ar">→</span> <b>整改</b> 全部统一成 32px 胶囊、字号 13px、垂直居中。</span></label></div>
+            <div class="it"><input type="checkbox" id="m102" checked /><label for="m102"><b>§1.2 堂食 / 外卖切换对齐规整</b> <em>(导航栏标题位·左对齐+胶囊化，与系统胶囊两端对齐)</em> <span class="it-tag t-schema">🗄 schema?</span> <span class="it-desc"><b>现状</b> 堂食 / 外卖切换在容器里不居中、偏左偏上。 <span class="ar">→</span> <b>整改</b> 水平 + 垂直居中,整条作为一个对齐容器与系统胶囊两端对齐。</span></label></div>
+            <div class="it"><input type="checkbox" id="m103" checked /><label for="m103"><b>§1.3 距离前位置小图标</b> <em>(霸王茶姬做法)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 门店距离只有数字（如 281.9m）、没图标,显单薄。 <span class="ar">→</span> <b>整改</b> 数字前加定位小图标（霸王茶姬做法）。</span></label></div>
+            <div class="it"><input type="checkbox" id="m104" checked /><label for="m104"><b>§1.4 收藏门店爱心（空心♡ / 实心♥ 跟主题）</b> <em>(可点击切换)</em> <span class="it-tag t-api">🔌 API</span> <span class="it-desc"><b>现状</b> 没法在顶部直接收藏当前门店,要进「我的」才能管理。 <span class="ar">→</span> <b>整改</b> 门店行右侧加爱心收藏,可点切换空心♡ / 实心♥（跟主题色）。</span></label></div>
+            <div class="it"><input type="checkbox" id="m105" checked /><label for="m105"><b>§1.5 制作中指示嵌入「距离」行（参考霸王茶姬）</b> <em>(内联 pill 与距离同排 · 数字突出 + 流光进度条 + 三态色阶；店名整名独占一行不被挤)</em> <span class="it-tag t-schema">🗄 schema</span> <span class="it-desc"><b>现状</b> 「N 单制作中」无处展示;原设想做成底部状态栏整块重构。 <span class="ar">→</span> <b>整改</b> 嵌进门店「距离」那一行做紧凑 pill（数字突出 + 流光进度条 + 三态色阶）,店名整名独占一行不被挤（霸王茶姬做法）。</span></label></div>
           </div>
         </details>
 
         <details data-page="menu" open>
           <summary>§2 左侧分类栏 <span class="c"><span class="done" data-counter="c1-2">0</span> / 5</span></summary>
           <div class="its" data-group="c1-2">
-            <div class="it"><input type="checkbox" id="m201" checked /><label for="m201"><b>§2.1 分类角标统一 + HOT 变体</b> <em>(尺寸/位置一致，NEW 红 / HOT 橙)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it"><input type="checkbox" id="m202" checked /><label for="m202"><b>§2.2 滚动联动高亮（含到底强制高亮最后一类）</b> <em>(P0 bug 已修)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it"><input type="checkbox" id="m203" checked /><label for="m203"><b>§2.3 分类区滚动条隐藏</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it"><input type="checkbox" id="m204" checked /><label for="m204"><b>§2.4 右上角加购数量角标（圆形 14×14 跟主题）</b> <em>(与 NEW 静态角标左右避让共存)</em> <span class="it-tag t-schema">🗄 schema</span></label></div>
-            <div class="it"><input type="checkbox" id="m205" checked /><label for="m205"><b>§2.5 选中态：加粗 + 浅色背景块 + 3px 左竖条</b> <em>(背景/色条跟主题)</em> <span class="it-tag t-schema">🗄 schema?</span></label></div>
+            <div class="it"><input type="checkbox" id="m201" checked /><label for="m201"><b>§2.1 分类角标统一 + HOT 变体</b> <em>(尺寸/位置一致，NEW 红 / HOT 橙)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 分类右上角「新」/ 数字角标各分类样式不统一（颜色 / 边距 / 字号都不一样）。 <span class="ar">→</span> <b>整改</b> 统一一套尺寸 / 颜色规则,NEW 红、HOT 橙。</span></label></div>
+            <div class="it"><input type="checkbox" id="m202" checked /><label for="m202"><b>§2.2 滚动联动高亮（含到底强制高亮最后一类）</b> <em>(P0 bug 已修)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 商品滚到最底时左侧分类高亮不跟随,最后一类无法被高亮（P0 bug）。 <span class="ar">→</span> <b>整改</b> 到底时强制高亮最后一个分类。</span></label></div>
+            <div class="it"><input type="checkbox" id="m203" checked /><label for="m203"><b>§2.3 分类区滚动条隐藏</b> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 左侧分类区滚动时露出原生滚动条,不美观。 <span class="ar">→</span> <b>整改</b> 隐藏分类区滚动条。</span></label></div>
+            <div class="it"><input type="checkbox" id="m204" checked /><label for="m204"><b>§2.4 右上角加购数量角标（圆形 14×14 跟主题）</b> <em>(与 NEW 静态角标左右避让共存)</em> <span class="it-tag t-schema">🗄 schema</span> <span class="it-desc"><b>现状</b> 切了分类后看不出自己从哪些分类下过单。 <span class="ar">→</span> <b>整改</b> 购物车里有某分类商品时,该分类右上角显示数字角标（与 NEW 静态角标左右避让共存）。</span></label></div>
+            <div class="it"><input type="checkbox" id="m205" checked /><label for="m205"><b>§2.5 选中态：加粗 + 浅色背景块 + 3px 左竖条</b> <em>(背景/色条跟主题)</em> <span class="it-tag t-schema">🗄 schema?</span> <span class="it-desc"><b>现状</b> 当前选中分类没有明显反馈,不知道自己正在哪一类。 <span class="ar">→</span> <b>整改</b> 选中 = 加粗 + 浅色背景块 + 左侧 3px 竖条（三段式强化,跟主题色）。</span></label></div>
           </div>
         </details>
 
         <details data-page="menu" open>
           <summary>§3 右侧商品区 <span class="c"><span class="done" data-counter="c1-3">0</span> / 7</span></summary>
           <div class="its" data-group="c1-3">
-            <div class="it"><input type="checkbox" id="m301" checked /><label for="m301"><b>§3.1 价格层级（无优惠 #333 / 有优惠品牌色 + 原价灰删除线）</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it"><input type="checkbox" id="m302" checked /><label for="m302"><b>§3.2 点击分类平滑滚动定位 + 弹性反馈</b> <em>(取消则瞬跳无动效)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it"><input type="checkbox" id="m303" checked /><label for="m303"><b>§3.3 到底提示「我是有底线的」</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it logic"><input type="checkbox" id="m304" /><label for="m304"><b>§3.4 swiper 圆角抖动修复</b> <em>(P0 视觉 bug)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it logic"><input type="checkbox" id="m305" /><label for="m305"><b>§3.5 二级分类支持</b> <em>(视产品判断)</em> <span class="it-tag t-api">🔌 API+🗄</span></label></div>
-            <div class="it logic"><input type="checkbox" id="m306" /><label for="m306"><b>§3.6 加车飞入抛物线动画</b> <span class="it-tag t-schema">🗄 schema</span></label></div>
-            <div class="it"><input type="checkbox" id="m307" checked /><label for="m307"><b>§3.7 分类标题竖条独立开关（保持左侧）</b> <em>(默认显示在标题左侧 · 3px 跟主题，可单独关闭)</em> <span class="it-tag t-schema">🗄 schema?</span></label></div>
+            <div class="it"><input type="checkbox" id="m301" checked /><label for="m301"><b>§3.1 价格层级（无优惠 #333 / 有优惠品牌色 + 原价灰删除线）</b> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 价格字号无差距、优惠价不突出。 <span class="ar">→</span> <b>整改</b> 无优惠用 #333,有优惠用品牌色 + 原价灰色删除线。</span></label></div>
+            <div class="it"><input type="checkbox" id="m302" checked /><label for="m302"><b>§3.2 点击分类平滑滚动定位 + 弹性反馈</b> <em>(取消则瞬跳无动效)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 点左侧分类是瞬间跳过去、无动效。 <span class="ar">→</span> <b>整改</b> 平滑滚动定位 + 到位弹性反馈（取消则瞬跳无动效）。</span></label></div>
+            <div class="it"><input type="checkbox" id="m303" checked /><label for="m303"><b>§3.3 到底提示「我是有底线的」</b> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 商品滚到底没任何提示,不知加载完没。 <span class="ar">→</span> <b>整改</b> 到底显示一行灰字「我是有底线的」。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="m304" /><label for="m304"><b>§3.4 swiper 圆角抖动修复</b> <em>(P0 视觉 bug)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 商品轮播来回切时底部圆角会瞬间变直角再恢复（P0 视觉 bug）。 <span class="ar">→</span> <b>整改</b> 圆角固定到外层容器,消除抖动。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="m305" /><label for="m305"><b>§3.5 二级分类支持</b> <em>(视产品判断)</em> <span class="it-tag t-api">🔌 API+🗄</span> <span class="it-desc"><b>现状</b> 只有一级分类,菜单 + 套餐 + 活动多场景没法分层。 <span class="ar">→</span> <b>整改</b> 支持「主分类 tab + 子分类 chip」两级结构（视产品判断）。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="m306" /><label for="m306"><b>§3.6 加车飞入抛物线动画</b> <span class="it-tag t-schema">🗄 schema</span> <span class="it-desc"><b>现状</b> 点加车没视觉反馈,不确定加成功没。 <span class="ar">→</span> <b>整改</b> 加「飞入购物车」抛物线动画。</span></label></div>
+            <div class="it"><input type="checkbox" id="m307" checked /><label for="m307"><b>§3.7 分类标题竖条独立开关（保持左侧）</b> <em>(默认显示在标题左侧 · 3px 跟主题，可单独关闭)</em> <span class="it-tag t-schema">🗄 schema?</span> <span class="it-desc"><b>现状</b> 每个分类标题左侧那根 3px 品牌色竖条固定显示、不能关。 <span class="ar">→</span> <b>整改</b> 做成可独立开关（默认显示在标题左侧,可单独关闭）。</span></label></div>
           </div>
         </details>
 
         <details data-page="menu" open>
           <summary>§4 选规格弹窗 <span class="sec-mod">新增 sheet</span> <span class="c"><span class="done" data-counter="c1-4">0</span> / 3</span></summary>
           <div class="its" data-group="c1-4">
-            <div class="it"><input type="checkbox" id="m400" checked /><label for="m400"><b>§4 选规格弹窗骨架（份量 / 口味 + 价格 footer）</b> <em>(弹窗做法待产品需求跟进：简单 SKU 走弹窗 / 复杂定制走详情页)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it"><input type="checkbox" id="m401" checked /><label for="m401"><b>§4.1 规格数量角标加 2px 白色分界线</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it logic"><input type="checkbox" id="m402" /><label for="m402"><b>§4.2 选规格时底部购物车条闪烁</b> <em>(P0 bug)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it"><input type="checkbox" id="m400" checked /><label for="m400"><b>§4 选规格弹窗骨架（份量 / 口味 + 价格 footer）</b> <em>(弹窗做法待产品需求跟进：简单 SKU 走弹窗 / 复杂定制走详情页)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc">新增「选规格」弹窗骨架:份量 / 口味选项 + 底部价格 footer。简单 SKU 走弹窗、复杂定制走详情页（弹窗做法待产品需求跟进）。</span></label></div>
+            <div class="it"><input type="checkbox" id="m401" checked /><label for="m401"><b>§4.1 规格数量角标加 2px 白色分界线</b> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 规格选项右上角数字角标直接贴边、和卡片粘连。 <span class="ar">→</span> <b>整改</b> 角标外圈加 2px 白色描边分隔。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="m402" /><label for="m402"><b>§4.2 选规格时底部购物车条闪烁</b> <em>(P0 bug)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 打开选规格弹窗时底部购物车条短暂闪烁（隐藏→显示→隐藏，P0 bug）。 <span class="ar">→</span> <b>整改</b> 调整显示条件判断,弹窗动画期间不再闪。</span></label></div>
           </div>
         </details>
 
         <details data-page="menu" open>
           <summary>§5 底部购物车条 <span class="c"><span class="done" data-counter="c1-5">0</span> / 4</span></summary>
           <div class="its" data-group="c1-5">
-            <div class="it"><input type="checkbox" id="m501" checked /><label for="m501"><b>§5.1 加购数量角标改品牌色</b> <em>(拍板：目标态跟 PRD，非黑色现状)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it"><input type="checkbox" id="m502" checked /><label for="m502"><b>§5.2 购物车 + / 图标与文字基线对齐</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it logic"><input type="checkbox" id="m503" /><label for="m503"><b>§5.3 底部条整条可点展开</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it"><input type="checkbox" id="m504" checked /><label for="m504"><b>§5.4 不可结算 disabled 态（灰化 + 文案变体）</b> <em>(演示开关切换)</em> <span class="it-tag t-schema">🗄 schema?</span></label></div>
+            <div class="it"><input type="checkbox" id="m501" checked /><label for="m501"><b>§5.1 加购数量角标改品牌色</b> <em>(拍板：目标态跟 PRD，非黑色现状)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 加购数量角标用了默认色、像系统色没品牌感。 <span class="ar">→</span> <b>整改</b> 角标改品牌色底 + 白字圆形（目标态跟 PRD,非黑色现状）。</span></label></div>
+            <div class="it"><input type="checkbox" id="m502" checked /><label for="m502"><b>§5.2 购物车 + / 图标与文字基线对齐</b> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 购物车「+」图标偏上、与文字基线不齐。 <span class="ar">→</span> <b>整改</b> 图标与同行文字垂直居中对齐。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="m503" /><label for="m503"><b>§5.3 底部条整条可点展开</b> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 底部条只有购物车图标区能点开浮层,文字 / 价格 / 空白点了没反应。 <span class="ar">→</span> <b>整改</b> 整条（去结算按钮除外）都可点展开购物车浮层。</span></label></div>
+            <div class="it"><input type="checkbox" id="m504" checked /><label for="m504"><b>§5.4 不可结算 disabled 态（灰化 + 文案变体）</b> <em>(演示开关切换)</em> <span class="it-tag t-schema">🗄 schema?</span> <span class="it-desc"><b>现状</b> 未达起送 / 库存不足 / 门店打烊时「去结算」仍是可点外观。 <span class="ar">→</span> <b>整改</b> 明确 disabled 灰化 + 文案随原因变,并拦截点击。</span></label></div>
           </div>
         </details>
 
         <details data-page="menu" open>
           <summary>§6 购物车浮层 <span class="sec-mod sec-rebuild">整体重写</span> <span class="c"><span class="done" data-counter="c1-6">0</span> / 8</span></summary>
           <div class="its" data-group="c1-6">
-            <div class="it"><input type="checkbox" id="m602" checked /><label for="m602"><b>§6.2 每行左侧勾选框</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it logic"><input type="checkbox" id="m603" /><label for="m603"><b>§6.3 左滑删除 + 二次确认</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it logic"><input type="checkbox" id="m604" /><label for="m604"><b>§6.4 清空二次确认</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it"><input type="checkbox" id="m605" checked /><label for="m605"><b>§6.5 多色价格层次（优惠价 / 减免 / 原价）</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it"><input type="checkbox" id="m606" checked /><label for="m606"><b>§6.6 顶部工具条（已享折扣 + 全选 + 清空）</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it"><input type="checkbox" id="m607" checked /><label for="m607"><b>§6.7 优惠券入口</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it"><input type="checkbox" id="m608" checked /><label for="m608"><b>§6.8 顶部 / footer 折扣价显示</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it"><input type="checkbox" id="m609" checked /><label for="m609"><b>§6.9 可视区扩到 ~80% + 商品行卡片化（保留浮现动效）</b> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it"><input type="checkbox" id="m602" checked /><label for="m602"><b>§6.2 每行左侧勾选框</b> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 购物车每行没勾选框,所有商品默认全部参与结算。 <span class="ar">→</span> <b>整改</b> 每行左侧加圆形勾选框,支持单选 / 全选。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="m603" /><label for="m603"><b>§6.3 左滑删除 + 二次确认</b> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 删购物车商品得把数量减到 0,没有快捷删除手势。 <span class="ar">→</span> <b>整改</b> 每行左滑出红色「删除」按钮 + 二次确认。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="m604" /><label for="m604"><b>§6.4 清空二次确认</b> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 点「清空」或返回时无确认,容易误清空。 <span class="ar">→</span> <b>整改</b> 清空购物车前弹二次确认弹窗。</span></label></div>
+            <div class="it"><input type="checkbox" id="m605" checked /><label for="m605"><b>§6.5 多色价格层次（优惠价 / 减免 / 原价）</b> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 购物车内价格颜色单一,没有优惠价 / 减免 / 原价层次。 <span class="ar">→</span> <b>整改</b> 多色价格层次区分优惠价、减免、原价。</span></label></div>
+            <div class="it"><input type="checkbox" id="m606" checked /><label for="m606"><b>§6.6 顶部工具条（已享折扣 + 全选 + 清空）</b> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 购物车顶部没有工具条。 <span class="ar">→</span> <b>整改</b> 顶部加一行（浅底）:已享折扣 + 全选 + 清空。</span></label></div>
+            <div class="it"><input type="checkbox" id="m607" checked /><label for="m607"><b>§6.7 优惠券入口</b> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 购物车没有显式优惠券入口。 <span class="ar">→</span> <b>整改</b> 购物车浮层顶部加「🎟 优惠券」入口。</span></label></div>
+            <div class="it"><input type="checkbox" id="m608" checked /><label for="m608"><b>§6.8 顶部 / footer 折扣价显示</b> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 购物车顶部只显示总价、不显示已享折扣。 <span class="ar">→</span> <b>整改</b> 顶部 / footer 显示「共 ¥X.XX,已享折扣 -¥Y.YY」。</span></label></div>
+            <div class="it"><input type="checkbox" id="m609" checked /><label for="m609"><b>§6.9 可视区扩到 ~80% + 商品行卡片化（保留浮现动效）</b> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 购物车浮层高度受限（约 60%）、行间距小、整体局促。 <span class="ar">→</span> <b>整改</b> 可视区扩到约 80% + 商品行卡片化 + 加大间距（保留浮现动效）。</span></label></div>
           </div>
         </details>
 
         <details data-page="menu" open>
           <summary>§7 门店切换弹窗 <span class="sec-mod">⛔ 作废</span> <span class="c"><span class="done" data-counter="c1-7">0</span> / 1</span></summary>
           <div class="its" data-group="c1-7">
-            <div class="it"><input type="checkbox" id="m701" checked /><label for="m701"><b>§7.1 门店卡片（店名/地址/距离带图标/选中态）+ 我的收藏区</b> <em>(⛔ 作废：点单页无切换弹窗，点门店行跳转独立「选择门店」页 choose-shop；下方 sheet 仅为示意 mock，整体性提升属该页独立需求)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it"><input type="checkbox" id="m701" checked /><label for="m701"><b>§7.1 门店卡片（店名/地址/距离带图标/选中态）+ 我的收藏区</b> <em>(⛔ 作废：点单页无切换弹窗，点门店行跳转独立「选择门店」页 choose-shop；下方 sheet 仅为示意 mock，整体性提升属该页独立需求)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc">⛔ 作废:点单页其实没有切换弹窗,点门店行是跳转独立「选择门店」页（choose-shop）;下方 sheet 仅为示意 mock,门店卡整体性提升属那个页的独立需求,本 PRD 不纳入。</span></label></div>
           </div>
         </details>
 
         <details data-page="menu">
           <summary>§8 全局弹框 <span class="c"><span class="done" data-counter="c1-8">0</span> / 2</span></summary>
           <div class="its" data-group="c1-8">
-            <div class="it logic"><input type="checkbox" id="m801" /><label for="m801"><b>§8.1 弹框重复弹出 bug（每次进点单页全量重调接口 → 弹框重触发）</b> <em>(P0 bug · 治本对标霸王茶姬：后端曝光去重 advertiseInfo/advertiseExpose；前端持久化频控为兜底)</em> <span class="it-tag t-api">🔌 API+🗄</span></label></div>
-            <div class="it logic"><input type="checkbox" id="m802" /><label for="m802"><b>§8.2 收货地址重复弹出防抖</b> <em>(P0 bug)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it logic"><input type="checkbox" id="m801" /><label for="m801"><b>§8.1 弹框重复弹出 bug（每次进点单页全量重调接口 → 弹框重触发）</b> <em>(P0 bug · 治本对标霸王茶姬：后端曝光去重 advertiseInfo/advertiseExpose；前端持久化频控为兜底)</em> <span class="it-tag t-api">🔌 API+🗄</span> <span class="it-desc"><b>现状</b> 门店 / 活动 / 全屏广告弹框每次进点单页、切回前台都重复弹,骚扰严重（根因:每次进页面全量重调接口触发,非缺频控策略）。 <span class="ar">→</span> <b>整改</b> 后端按曝光去重为治本 + 前端持久化频控兜底（霸王茶姬做法）。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="m802" /><label for="m802"><b>§8.2 收货地址重复弹出防抖</b> <em>(P0 bug)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 点「切换收货地址」太快时,地址弹框会重复弹两次以上（P0 bug）。 <span class="ar">→</span> <b>整改</b> 按钮加防抖（300ms）+ 弹框打开期间锁定触发器。</span></label></div>
           </div>
         </details>
 
         <details data-page="menu">
           <summary>§9 页面骨架 / 吸顶 <span class="c"><span class="done" data-counter="c1-9">0</span> / 2</span></summary>
           <div class="its" data-group="c1-9">
-            <div class="it logic"><input type="checkbox" id="m901" /><label for="m901"><b>§9.1 安卓上滑顶部门店行吸顶</b> <em>(P0)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
-            <div class="it"><input type="checkbox" id="m902" checked /><label for="m902"><b>§9.2 商品分类名右侧吸顶</b> <em>(sticky 分类标题)</em> <span class="it-tag t-fe">🔧 前端</span></label></div>
+            <div class="it logic"><input type="checkbox" id="m901" /><label for="m901"><b>§9.1 安卓上滑顶部门店行吸顶</b> <em>(P0)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 安卓上滑时顶部门店行 + 工具栏会被一起顶出屏幕、不吸顶。 <span class="ar">→</span> <b>整改</b> 顶部门店行 sticky 吸顶,滚动时始终可见。</span></label></div>
+            <div class="it"><input type="checkbox" id="m902" checked /><label for="m902"><b>§9.2 商品分类名右侧吸顶</b> <em>(sticky 分类标题)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 滚商品列表时分类标题随商品滚走,看不出当前在哪一类。 <span class="ar">→</span> <b>整改</b> 分类标题在该类商品占屏时吸顶,滚到下一类时切换（霸王茶姬做法）。</span></label></div>
+          </div>
+        </details>
+
+        <!-- 商品详情清单：按 PRD《商品详情整改PRD》§1–§9 拆 9 节，与点单页同结构；勾选=原型已演示，逻辑项=未演示见 PRD -->
+        <details data-page="goods" open>
+          <summary>§1 承载形态与页面骨架 <span class="c"><span class="done" data-counter="gd-1">0</span> / 6</span></summary>
+          <div class="its" data-group="gd-1">
+            <div class="it"><input type="checkbox" id="gd100" checked /><label for="gd100"><b>§1.0 承载形态：保持全屏页</b> <em>(决策·不改弹窗架构)</em> <span class="it-desc">维持现在的全屏详情页（点进去整屏打开），不改成底部弹窗——这是架构决策，本身不动 UI。</span></label></div>
+            <div class="it"><input type="checkbox" id="gd101" checked /><label for="gd101"><b>§1.1 商品图高度上限 + 图文渐变过渡</b> <em>(P1 · 瑞幸/霸王茶姬)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 商品大图按原图比例铺满、高度不固定，图和下方文字之间硬切。 <span class="ar">→</span> <b>整改</b> 给图设统一高度上限裁切展示，图到文字之间加一段柔和渐变过渡。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="gd102" /><label for="gd102"><b>§1.2 图被导航栏压住 / 规格少无法下滑</b> <em>(P0 bug)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 返回键/微信胶囊直接盖在图片顶部；规格少时页面不够长，没法下滑把被盖住的图露出来。 <span class="ar">→</span> <b>整改</b> 顶部为导航栏留出占位，规格再少也能下滑看到完整大图。</span></label></div>
+            <div class="it"><input type="checkbox" id="gd103" checked /><label for="gd103"><b>§1.3 返回 icon 与系统胶囊对齐</b> <em>(P1)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 左上返回键和右上微信胶囊不在同一水平中线，看着没对齐。 <span class="ar">→</span> <b>整改</b> 返回键按胶囊几何中心对齐，与系统胶囊两端齐平。</span></label></div>
+            <div class="it"><input type="checkbox" id="gd104" checked /><label for="gd104"><b>§1.4 底部操作栏阴影分离</b> <em>(P1)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 底部「加入购物车」栏和上方内容同为白底、连成一片没有分界。 <span class="ar">→</span> <b>整改</b> 给底栏加一道顶部投影，与滚动内容分层。</span></label></div>
+            <div class="it"><input type="checkbox" id="gd105" checked /><label for="gd105"><b>§1.5 内容分区节奏（留白 + 分割线）</b> <em>(P2 · 喜茶)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 规格 / 做法 / 小料各组紧贴堆在一起，像一张密密麻麻的表。 <span class="ar">→</span> <b>整改</b> 各组之间加留白 + 浅灰分割线，信息有节奏、好读（已在左侧 demo 演示）。</span></label></div>
           </div>
         </details>
 
         <details data-page="goods" open>
-          <summary>
-            商品详情 · 增量
-            <span class="c"><span class="done" data-counter="c2">0</span> / 7</span>
-          </summary>
-          <div class="its" data-group="c2">
-            <div class="it"><input type="checkbox" id="g1" checked /><label for="g1"><b>保留全屏页 + 透明商品图浮在渐变上（不改成弹框）</b> <em>(不推翻现状)</em></label></div>
-            <div class="it"><input type="checkbox" id="g2" checked /><label for="g2"><b>顶部右侧悬浮分享按钮（毛玻璃）</b> <em>(瑞幸/霸王茶姬都有)</em></label></div>
-            <div class="it"><input type="checkbox" id="g3" checked /><label for="g3"><b>左下卡路里胶囊</b> <em>(霸王茶姬做法)</em></label></div>
-            <div class="it"><input type="checkbox" id="g4" checked /><label for="g4"><b>描述文案关键词品牌色加重</b> <em>(原描述纯灰色一行)</em></label></div>
-            <div class="it"><input type="checkbox" id="g5" checked /><label for="g5"><b>"上滑调整口味" 提示</b> <em>(霸王茶姬做法)</em></label></div>
-            <div class="it"><input type="checkbox" id="g6" checked /><label for="g6"><b>加料保留 2 列 pill + 选中步进器，但加角标数量</b> <em>(现状已有，补角标对齐瑞幸)</em></label></div>
-            <div class="it"><input type="checkbox" id="g7" checked /><label for="g7"><b>底部双层栏加阴影分层</b> <em>(和滚动区内容分界)</em></label></div>
+          <summary>§2 加载与抖动 <span class="c"><span class="done" data-counter="gd-2">0</span> / 4</span></summary>
+          <div class="its" data-group="gd-2">
+            <div class="it logic"><input type="checkbox" id="gd201" /><label for="gd201"><b>§2.1 骨架屏替代 Loading GIF</b> <em>(P1 · 麦当劳/喜茶)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 加载时全屏转圈，数据一到整页突然蹦出来。 <span class="ar">→</span> <b>整改</b> 先显示灰色占位骨架（图 / 标题 / 规格 / 按钮的形状），过渡更平滑。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="gd202" /><label for="gd202"><b>§2.2 图片高度固定初始值消跳变</b> <em>(P0 bug · 抖动核心)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 图片先按估算高度显示，真图加载完高度又变一次，整页被「顶」一下抖动。 <span class="ar">→</span> <b>整改</b> 图片高度一开始就固定、不再二次跳变，消除抖动。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="gd203" /><label for="gd203"><b>§2.3 推荐区预留高度 / 延迟整体渲染</b> <em>(P2)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 底部「猜你喜欢」数据晚到，到了才追加，把页面高度又撑变一次。 <span class="ar">→</span> <b>整改</b> 先预留高度或等数据齐了一次性渲染，避免再次抖动。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="gd204" /><label for="gd204"><b>§2.4 页面入场动画</b> <em>(P2 · 麦当劳)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 内容加载完直接出现，略生硬。 <span class="ar">→</span> <b>整改</b> 内容做轻微淡入 + 上移动画，掩盖布局微调（麦当劳那种「蹦出来」效果）。</span></label></div>
+          </div>
+        </details>
+
+        <details data-page="goods" open>
+          <summary>§3 商品图与信息区 <span class="c"><span class="done" data-counter="gd-3">0</span> / 4</span></summary>
+          <div class="its" data-group="gd-3">
+            <div class="it logic"><input type="checkbox" id="gd301" /><label for="gd301"><b>§3.1 切换规格主图联动（含淡入）</b> <em>(P1 · 瑞幸/麦当劳)</em> <span class="it-tag t-brand">🏷 品牌</span> <span class="it-desc"><b>现状</b> 切换规格时主图只是「有条件」换图，某些配置下不跟着换，体验不一致。 <span class="ar">→</span> <b>整改</b> 统一「切规格主图必跟着换」并带淡入过渡。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="gd302" /><label for="gd302"><b>§3.2 选中菜品在主图区可视化</b> <em>(P2 · 麦当劳)</em> <span class="it-tag t-design">🎨 设计</span> <span class="it-desc"><b>现状</b> 套餐 / 规格选了什么，只有价格旁一行小字。 <span class="ar">→</span> <b>整改</b> 把已选菜品在顶部图片区可视化展示，可删、能看到还差哪些没选（麦当劳做法）。</span></label></div>
+            <div class="it"><input type="checkbox" id="gd303" checked /><label for="gd303"><b>§3.3 商品描述富文本（配色 + 图文）</b> <em>(P2 · 配色已演示，图文待后端)</em> <span class="it-tag t-api">🔌 API</span> <span class="it-desc"><b>现状</b> 商品描述只能是纯文字，不能配色也不能放图。 <span class="ar">→</span> <b>整改</b> 描述升级富文本：关键词配色 + 内嵌图片 / 图文详情（对标瑞幸、霸王茶姬）。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="gd304" /><label for="gd304"><b>§3.4 营养 / 卡路里展示</b> <em>(P2 · 霸王茶姬/喜茶)</em> <span class="it-tag t-api">🔌 API</span> <span class="it-desc"><b>现状</b> 完全没有热量 / 营养信息。 <span class="ar">→</span> <b>整改</b> 展示每杯能量 / 卡路里 + 营养健康分级（霸王茶姬、喜茶有）。</span></label></div>
+          </div>
+        </details>
+
+        <details data-page="goods" open>
+          <summary>§4 规格选择区 <span class="c"><span class="done" data-counter="gd-4">0</span> / 2</span></summary>
+          <div class="its" data-group="gd-4">
+            <div class="it"><input type="checkbox" id="gd401" checked /><label for="gd401"><b>§4.1 选中态黑边 → 主题色 / 阴影</b> <em>(P1 · 麦当劳内阴影)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 图片型规格 / 套餐卡选中时是一圈突兀黑边（代码里边框没给颜色，默认取了黑）。 <span class="ar">→</span> <b>整改</b> 选中描边改主题色，或改用内阴影 / 浅底，更柔和。</span></label></div>
+            <div class="it"><input type="checkbox" id="gd402" checked /><label for="gd402"><b>§4.2 多规格图片右上角 iOS 溢出</b> <em>(P1 bug)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 选中 ✓ 角标用负偏移定位、父级没裁切，iOS 上角标溢出卡片边界特别明显。 <span class="ar">→</span> <b>整改</b> 父级加裁切并收紧角标定位，角标不再溢出。</span></label></div>
+          </div>
+        </details>
+
+        <details data-page="goods" open>
+          <summary>§5 加料区 <span class="c"><span class="done" data-counter="gd-5">0</span> / 7</span></summary>
+          <div class="its" data-group="gd-5">
+            <div class="it logic"><input type="checkbox" id="gd501" /><label for="gd501"><b>§5.1 加料数量 badge 行内化</b> <em>(P1 · 企迈/霸王茶姬)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 加料选中后同时有「[- 名称 +]」控件和右上角一个圆形数字角标，数量重复显示还溢出。 <span class="ar">→</span> <b>整改</b> 去掉右上角角标，数量只在行内「[- N +]」步进器里显示；未选也预留加减位（只露 +），选中只填入 -/数字，价格与 + 不跳位（已在 demo 演示）。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="gd502" /><label for="gd502"><b>§5.2 加减号 icon 居中</b> <em>(P1 bug · 企迈)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 加减号按钮里的 +/- 没在正中间（用了 padding 补偿的 hack 反而偏上）。 <span class="ar">→</span> <b>整改</b> +/- 精确居中，换 SVG 图标保证几何居中。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="gd503" /><label for="gd503"><b>§5.3 小料名称 / 价格列对齐</b> <em>(P1 bug · 企迈)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 加料名称和价格各自居中、上下堆叠，一排排不齐显得乱。 <span class="ar">→</span> <b>整改</b> 名称、价格都左对齐成列，做到「名称对名称、价格对价格」；价格自成一列不被加减号挤压，加减位恒定预留、选中不跳位（企脉做法）。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="gd504" /><label for="gd504"><b>§5.4 加料选中态透明度调整</b> <em>(P2 · 设计存疑)</em> <span class="it-tag t-design">🎨 设计</span> <span class="it-desc"><b>现状</b> 加料选中底色用了 0.25 透明度，偏淡、不够明显。 <span class="ar">→</span> <b>整改</b> 提升为更清晰的浅色实底或边框态，「已选」一眼可辨（具体值待设计定）。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="gd505" /><label for="gd505"><b>§5.5 加料长名称撑满一行（截断兜底）</b> <em>(P2 · 企迈)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 2 列布局下长名称（如「脆波波（限冷饮）」）挤在窄列被撑破 / 截断不一致。 <span class="ar">→</span> <b>整改</b> 长加料项自动占满整行、短项保持 2 列，超长再省略号兜底（已在 demo 演示）。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="gd506" /><label for="gd506"><b>§5.6 加料项 desc 补充说明</b> <em>(P2 · 霸王茶姬)</em> <span class="it-tag t-api">🔌 API</span> <span class="it-desc"><b>现状</b> 加料项只有名称 + 价格，没有补充说明。 <span class="ar">→</span> <b>整改</b> 名称下方支持一行补充说明（如「限冷饮」），不再硬塞进名称里（霸王茶姬做法）。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="gd507" /><label for="gd507"><b>§5.7 加料单价展示</b> <em>(P2)</em> <span class="it-tag t-api">🔌 API</span> <span class="it-desc"><b>现状</b> 加料是否显示单价不统一。 <span class="ar">→</span> <b>整改</b> 收费加料显示单价（如「+¥3」），免费的标「免费」或不显示，加之前就知道价。</span></label></div>
+          </div>
+        </details>
+
+        <details data-page="goods" open>
+          <summary>§6 套餐 <span class="c"><span class="done" data-counter="gd-6">0</span> / 4</span></summary>
+          <div class="its" data-group="gd-6">
+            <div class="it"><input type="checkbox" id="gd601" checked /><label for="gd601"><b>§6.1 套餐已选清单购物车化（放底部·操作栏上方）+ 每项可编辑（去定制 / ✏️）</b> <em>(P1 · 霸王茶姬/麦当劳)</em> <span class="it-tag t-design">🎨 设计</span> <span class="it-desc"><b>现状</b> 套餐已选是混合形态——有的卡上打 ✓、有的角上标数字、只有带规格的才进清单且只显前 3 个；修改子项只能靠条件渲染的「选规格」按钮，普通已选基本是<b>只读文字描述</b>。 <span class="ar">→</span> <b>整改</b> 所有已选子项汇总成统一「类购物车」清单，<b>放详情页底部、操作栏上方</b>作下单前汇总，<b>默认折叠成「已选条」</b>(小圆缩略图+✏️ 角标+「已选 N 件」+可点 ^ 手柄，对齐霸王茶姬 #7)；点手柄/整条<b>展开成「已选商品」弹层</b>(#8 全量明细：缩略图+名+规格明细行+编辑)；每项<b>带「去定制 / ✏️」</b>点开<b>该项专属</b>选规格弹窗改规格/加料。<b>整改后底部已选条已覆盖全部已包含，顶部不再单列「已包含」大卡</b>(取消本项=现状则反过来：显示顶部大卡、隐藏底部条)。(弹窗 SkuAttrsSelector+editItemSku 已有，主要做折叠条+弹层+入口统一)</span></label></div>
+            <div class="it"><input type="checkbox" id="gd602" checked /><label for="gd602"><b>§6.2 必选未选黄边高亮（自动定位待联调）</b> <em>(P1 · 麦当劳)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 必选项没选时只弹个「需要选择 X」的弹窗，不滚动不高亮，用户得自己找。 <span class="ar">→</span> <b>整改</b> 自动滚动定位到该组 + 黄边 / 主题色高亮 + 内联提示，替代弹窗（麦当劳做法）。</span></label></div>
+            <div class="it"><input type="checkbox" id="gd603" checked /><label for="gd603"><b>§6.3 底部操作栏内边距不足（修正主体：是操作栏不是按钮）</b> <em>(P1 · 瑞幸/麦当劳)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 缺 padding 的是<b>底部操作栏容器</b>不是恢复默认按钮——外层 fixed bar 底部只有安全区（非刘海屏≈0），内层只有 px-5 + pb-2、<b>无顶部 padding</b>（FoodSelector/index.tsx:1866/1874），价格与按钮贴上沿。 <span class="ar">→</span> <b>整改</b> 操作栏补顶部 padding（16~24rpx）、非安全区机型补基础底部 padding，横向 px-5 保留，配合 §1.4 顶部阴影分层。（注：恢复默认按钮其实已有 padding，原主体写错了。）</span></label></div>
+            <div class="it"><input type="checkbox" id="gd604" checked /><label for="gd604"><b>§6.4 套餐子商品选中 ✓ icon 大小不一致（选中 34rpx / 未选 38rpx）</b> <em>(P1 · 图源手绘)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 选中 ✓ icon 写成 <b>selected ? 34rpx : 38rpx</b>（PackageSelector/index.tsx:281/371）——同行里"已选"的 ✓（34）比"未选"的（38）小，整行参差，即 PDF 手绘圈的「大小不一致」（指 icon、不是卡宽）。另有印刷批注「icon 得换一下」=换图形。 <span class="ar">→</span> <b>整改</b> ✓ icon 选中/未选<b>固定同尺寸</b>（只切勾选态，不改 width/height）+ 修溢出（同 §4.2）+ 按需换 icon 图形。</span></label></div>
+          </div>
+        </details>
+
+        <details data-page="goods" open>
+          <summary>§7 底部操作栏 <span class="c"><span class="done" data-counter="gd-7">0</span> / 2</span></summary>
+          <div class="its" data-group="gd-7">
+            <div class="it"><input type="checkbox" id="gd701" checked /><label for="gd701"><b>§7.1 阴影分离（见 §1.4）</b> <em>(同一改动)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc">与 §1.4 同一处改动：底部操作栏加顶部投影、与内容分层。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="gd702" /><label for="gd702"><b>§7.2 不可购态：售罄置灰 / 必选未齐引导（不一刀切）</b> <em>(P1 · 霸王茶姬/麦当劳)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 必选没齐和售罄被一并处理（我方必选未选还弹 modal）。 <span class="ar">→</span> <b>整改</b> 分两种:售罄/打烊/未达起送才置灰+拦截（"已售罄"）;必选未齐<b>不灰、可点</b>,点击滚动定位到缺失项并高亮（霸王茶姬 toast「请选择套餐规格」/麦当劳定位高亮，复用 §6.2），不弹窗不死按钮。</span></label></div>
+          </div>
+        </details>
+
+        <details data-page="goods" open>
+          <summary>§8 弹层与滚动 <span class="c"><span class="done" data-counter="gd-8">0</span> / 4</span></summary>
+          <div class="its" data-group="gd-8">
+            <div class="it logic"><input type="checkbox" id="gd801" /><label for="gd801"><b>§8.1 套餐二级弹窗背景穿透滚动</b> <em>(P0 bug)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 套餐里「选规格」弹窗弹出时，手指滑动会把底层页面也带着滚（背景穿透）。 <span class="ar">→</span> <b>整改</b> 弹窗打开期间锁住底层页面滚动。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="gd802" /><label for="gd802"><b>§8.2 ScrollView enhanced + 底部占位精确化</b> <em>(P2)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 主滚动没开 enhanced，部分机型不够顺滑；底部预留空白偏大。 <span class="ar">→</span> <b>整改</b> 开 enhanced 提升顺滑度，底部占位按操作栏实际高度动态计算。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="gd803" /><label for="gd803"><b>§8.3 内容溢出渐变提示 ⛔ 作废 → 并入 §9.4</b> <em>(已废)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>作废</b> 原想做「底栏上方渐变虚化」是臆想的弱方案，竞品不这么做。「下方还有内容、引导上滑」的正解是 §9.4 的<b>「上滑调整口味」浮层 pill</b>（霸王茶姬，见截图），不做渐变层。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="gd804" /><label for="gd804"><b>§8.4 推荐区横向滚动与外层冲突</b> <em>(P2)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 底部推荐商品横滑与外层竖滑手势在部分机型打架。 <span class="ar">→</span> <b>整改</b> 换非冲突的横滑方案 / 加手势方向锁定，横滑不再误触发竖滚。</span></label></div>
+          </div>
+        </details>
+
+        <details data-page="goods" open>
+          <summary>§9 交互增强 / 功能补齐 <span class="c"><span class="done" data-counter="gd-9">0</span> / 4</span></summary>
+          <div class="its" data-group="gd-9">
+            <div class="it logic"><input type="checkbox" id="gd901" /><label for="gd901"><b>§9.1 保存口味</b> <em>(P2 · 瑞幸/霸王茶姬)</em> <span class="it-tag t-api">🔌 API</span> <span class="it-desc"><b>现状</b> 没有保存口味功能。 <span class="ar">→</span> <b>整改</b> 支持把当前规格 / 加料组合「收藏口味」，下次一键复用（瑞幸做法）。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="gd902" /><label for="gd902"><b>§9.2 长按加号连续加</b> <em>(P2 · 瑞幸)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 加号只能一下一下点。 <span class="ar">→</span> <b>整改</b> 长按加号 / 减号连续 +/-（瑞幸做法）。</span></label></div>
+            <div class="it"><input type="checkbox" id="gd903" checked /><label for="gd903"><b>§9.3 顶部分享入口</b> <em>(P2 · 瑞幸/霸王茶姬，海报待后端)</em> <span class="it-tag t-api">🔌 API</span> <span class="it-desc"><b>现状</b> 没有显式分享按钮，只能靠微信胶囊里的「…」。 <span class="ar">→</span> <b>整改</b> 顶部加分享图标，点了分享好友 / 生成商品美图海报（瑞幸、霸王茶姬有）。</span></label></div>
+            <div class="it logic"><input type="checkbox" id="gd904" /><label for="gd904"><b>§9.4 上滑可查看更多：「上滑调整口味」浮层 pill（§8.3 并入）</b> <em>(P2 · 霸王茶姬)</em> <span class="it-tag t-fe">🔧 前端</span> <span class="it-desc"><b>现状</b> 规格 / 加料超出屏幕时没提示，用户不知下方还有必选（我方源码全无 scroll-tip）。 <span class="ar">→</span> <b>整改</b> 规格区底部浮一颗<b>「上滑调整口味」pill</b>（深色胶囊 + 双下箭头动图，霸王茶姬 food-sku-scroll-tip，见截图），滚到底淡出。不做渐变层。</span></label></div>
           </div>
         </details>
 
@@ -4473,6 +5411,8 @@
         document.querySelectorAll('.panel [data-page]').forEach((el) => {
           el.style.display = el.dataset.page === name ? '' : 'none'
         })
+        var sw = document.querySelector('.gd-subtabs')
+        if (sw) sw.classList.toggle('show', name === 'goods')
       }
       tabBtns.forEach((b) =>
         b.addEventListener('click', () => switchPage(b.dataset.page))
@@ -4487,9 +5427,14 @@
         })
       })
 
-      const sheet = document.getElementById('cart-sheet')
+      // 购物车明细：从吸底栏上方展开（吸底栏常驻、非模态）。空车不展开（对齐源码 showCart）
+      const cartDockEl = () => document.querySelector('#page-menu .cart-dock')
+      function showCartPop() { const d = cartDockEl(); if (d && Object.keys(cart).length) d.classList.add('pop-open') }
+      function hideCartPop() { const d = cartDockEl(); if (d) d.classList.remove('pop-open') }
       function toggleSheet() {
-        sheet.classList.toggle('show')
+        const d = cartDockEl(); if (!d) return
+        if (!d.classList.contains('pop-open') && !Object.keys(cart).length) return // 空车不展开
+        d.classList.toggle('pop-open')
       }
 
       // 分类 ↔ 商品双向联动（§3.2 点击平滑滚动+弹性反馈 / §2.2 滚动高亮含到底）
@@ -4616,6 +5561,86 @@
       function hideSheet(id) {
         document.getElementById(id).classList.remove('show')
       }
+      // §6.1 已选明细弹窗：从「已选条」那一行往上弹（已选条 + 操作栏常驻、不被盖住）
+      function gdDock() {
+        var demo = document.querySelector('#page-goods .gd-demo.is-combo')
+        return demo ? demo.querySelector('.gd-dock') : null
+      }
+      function showSelPop() { var d = gdDock(); if (d) d.classList.add('pop-open') }
+      function hideSelPop() { var d = gdDock(); if (d) d.classList.remove('pop-open') }
+      function toggleSelPop() { var d = gdDock(); if (d) d.classList.toggle('pop-open') }
+
+      // §6.2 / §7.2 + 加车流程：加入购物车 / 返回 都走这里。必选未齐 → 定位高亮（不离开）；齐了 → 加车 toast + 返回点单页
+      function gdActiveDemo() { return document.querySelector('#page-goods .gd-demo.active') }
+      // 找第一个「必选未齐」的分组：单选规格组（data-pick="single"）无任何选中项即未齐
+      function gdFirstUnmet(demo) {
+        var unmet = null
+        demo.querySelectorAll('.gd-body .combo-pick[data-pick="single"]').forEach(function (grid) {
+          if (unmet) return
+          if (!grid.querySelector('.cb-item.sel')) unmet = grid.closest('.sg')
+        })
+        return unmet
+      }
+      // 麦当劳式（对齐 image #13）：滚动定位 + 整组黄色渐变描边/外发光 + 标题内联「您还需选择 N 份」(橙色加粗)；描边/提示保留到选中，触发时 3 秒发光脉冲
+      function gdFlashRequired(sg) {
+        if (!sg) return
+        sg.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        // 标题内联提示：您还需选择 N 份（对齐麦当劳 dc_comboitem_seciton 的「您还需选择N份」）
+        var grid = sg.querySelector('.combo-pick[data-pick="single"]')
+        var min = grid && grid.dataset.min ? +grid.dataset.min : 1
+        var sel = grid ? grid.querySelectorAll('.cb-item.sel').length : 0
+        var need = Math.max(1, min - sel)
+        var t = sg.querySelector('.hd .t')
+        if (t) {
+          var hint = t.querySelector('.req-hint')
+          if (!hint) { hint = document.createElement('span'); hint.className = 'req-hint'; t.appendChild(hint) }
+          hint.textContent = '您还需选择 ' + need + ' 份'
+          hint.classList.add('show')
+        }
+        sg.classList.add('req-active')   // 黄色渐变描边 + 外发光，保留到选中
+        sg.classList.remove('gd-req-flash')
+        void sg.offsetWidth // 重置动画，便于重复触发
+        sg.classList.add('gd-req-flash') // 3 秒发光脉冲
+        setTimeout(function () { sg.classList.remove('gd-req-flash') }, 3000)
+      }
+      var gdToastTimer = null
+      function gdToast(msg, cb) {
+        var t = document.getElementById('gd-toast'); if (!t) { if (cb) cb(); return }
+        if (msg) { var sp = t.querySelector('span'); if (sp) sp.textContent = msg }
+        t.classList.add('show')
+        clearTimeout(gdToastTimer)
+        gdToastTimer = setTimeout(function () { t.classList.remove('show'); if (cb) cb() }, 900)
+      }
+      function gdAddToCart() {
+        var demo = gdActiveDemo(); if (!demo) return
+        var unmet = gdFirstUnmet(demo)
+        if (unmet) {           // 必选未齐：定位 + 黄色渐变高亮，不离开、不弹窗、不死按钮
+          hideSelPop()
+          gdFlashRequired(unmet)
+          return
+        }
+        // 齐了：把配置好的商品真正加入购物车（返回点单页后数量/金额会随之更新），再 toast → 返回
+        var isCombo = demo.classList.contains('is-combo')
+        var nmEl = demo.querySelector('.gd-intro .nm')
+        var numEl = demo.querySelector('.gd-ft .top-row .tot .pr .num')
+        var qEl = demo.querySelector('.gd-ft .top-row .stp .q')
+        var briefEl = demo.querySelector('.gd-ft .brief')
+        var origEl = demo.querySelector('.gd-ft .top-row .tot .pr span[style*="line-through"]')
+        addToCart(
+          {
+            name: nmEl ? nmEl.textContent.trim() : isCombo ? '套餐' : '商品',
+            price: numEl ? parseFloat(numEl.textContent) || 0 : 0,
+            orig: origEl ? parseFloat(origEl.textContent.replace(/[^\d.]/g, '')) || null : null,
+            spec: briefEl ? briefEl.textContent.trim() : '',
+            img: isCombo ? 'g-red' : 'g-mint',
+            em: isCombo ? '🍗' : '🧋',
+            cat: 'wz',
+          },
+          qEl ? parseInt(qEl.textContent, 10) || 1 : 1
+        )
+        hideSelPop()
+        gdToast('已加入购物车', function () { switchPage('menu') })
+      }
 
       // §1.4 收藏门店：空心♡ ⇄ 实心♥
       function toggleFav(btn) {
@@ -4673,7 +5698,7 @@
       function onCheckout() {
         const cta = document.getElementById('cart-cta')
         if (cta.classList.contains('disabled')) return
-        document.getElementById('cart-sheet').classList.remove('show')
+        hideCartPop()
         switchPage('checkout')
       }
 
@@ -4742,6 +5767,34 @@
         if (cb) {
           cb.addEventListener('change', () => applyFeat(id))
           applyFeat(id)
+        }
+      })
+
+      // ===== 商品详情 现状 ⇄ 整改 联动（同上机制，off-KEY 加在 #page-goods）=====
+      const FEAT_GD = {
+        gd104: 'ftshadow', // §1.4 底部操作栏阴影分离
+        gd105: 'secrhythm', // §1.5 内容分区节奏（留白 + 分割线）
+        gd303: 'desccolor', // §3.3 描述关键词品牌色
+        gd401: 'selcolor', // §4.1 图片规格卡选中描边（取消=黑边）
+        gd402: 'tickoverflow', // §4.2 选中 ✓ 角标溢出
+        gd601: 'combocart', // §6.1 套餐已选清单
+        gd602: 'needhl', // §6.2 必选黄边高亮
+        gd603: 'rspad', // §6.3 恢复默认按钮 padding
+        gd604: 'evengrid', // §6.4 套餐子商品等宽方图网格
+        gd903: 'share', // §9.3 顶部分享入口
+      }
+      const pageGoods = document.getElementById('page-goods')
+      function applyFeatGd(id) {
+        const key = FEAT_GD[id]
+        const cb = document.getElementById(id)
+        if (!key || !cb || !pageGoods) return
+        pageGoods.classList.toggle('off-' + key, !cb.checked)
+      }
+      Object.keys(FEAT_GD).forEach((id) => {
+        const cb = document.getElementById(id)
+        if (cb) {
+          cb.addEventListener('change', () => applyFeatGd(id))
+          applyFeatGd(id)
         }
       })
 
@@ -4888,11 +5941,6 @@
         const disc = document.querySelector('#cart-sheet .cart-discount')
         disc.querySelector('b').textContent = '¥' + money(s.saved)
         disc.style.display = s.saved > 0 ? '' : 'none'
-        document.querySelector('#cart-sheet .cf-price .line1').innerHTML =
-          '<span class="cnt">共 ' + s.qty + ' 件</span> 实付 <span class="sym">¥</span><span class="num">' + money(s.total) + '</span>'
-        const line2 = document.querySelector('#cart-sheet .cf-price .line2')
-        line2.textContent = '已享折扣 -¥' + money(s.saved)
-        line2.style.display = s.saved > 0 ? '' : 'none'
         const allOn = items.length && items.every(([, i]) => i.checked)
         document.querySelector('#cart-sheet .sel-all').classList.toggle('on', !!allOn)
         const bd = document.querySelector('#cart-sheet .sheet-bd')
@@ -5054,6 +6102,216 @@
       cart[SPEC_KEY] = { name: SPEC_KEY, price: 11.9, orig: 16.8, spec: '标准份 · 常温', img: 'g-red', em: '🍟', cat: 'wz', qty: 1, checked: true }
       cart['掌中宝 (鸡膝软骨) 250g'] = { name: '掌中宝 (鸡膝软骨) 250g', price: 22.9, orig: null, spec: '标准份 · 常温', img: 'g-amber', em: '🍗', cat: 'wz', qty: 1, checked: true }
       renderAll()
+    </script>
+    <script>
+      // 商品详情：单品 / 套餐 双 demo 子 tab 切换
+      function goodsDemo(btn, which) {
+        document.querySelectorAll('.gd-subtabs button').forEach(function (b) {
+          b.classList.toggle('on', b === btn)
+        })
+        document.querySelectorAll('#page-goods .gd-demo').forEach(function (d) {
+          d.classList.toggle('active', d.classList.contains('is-' + which))
+        })
+      }
+      // §6.1 去定制：每个子项打开「专属」规格弹窗（点不同项 → 不同名称 + 不同规格组）
+      var SPEC_CONFIG = {
+        '吉乐鸡块': { g: 'g-amber', em: '🍗', groups: [{ t: '份量', opts: ['标准份', '加大 +¥3'] }, { t: '蘸酱', opts: ['番茄酱', '沙拉酱', '蜂蜜芥末'] }] },
+        '黄金粗薯（大）': { g: 'g-cream', em: '🍟', groups: [{ t: '份量', opts: ['中份', '大份'] }, { t: '撒粉', opts: ['原味', '海苔', '藤椒'] }] },
+        '【双拼升级】韩式炸鸡': { g: 'g-red', em: '🍗', groups: [{ t: '口味 A', opts: ['原味', '香辣', '藤椒'] }, { t: '口味 B', opts: ['原味', '香辣', '藤椒'] }] },
+        '生椰拿铁': { g: 'g-plum', em: '🧋', groups: [{ t: '杯型', opts: ['中杯', '大杯'] }, { t: '糖度', opts: ['标准糖', '少糖', '五分糖', '无糖'] }, { t: '冰度', opts: ['正常冰', '少冰', '去冰'] }] },
+        '茉莉柠檬茶': { g: 'g-cream', em: '🧋', groups: [{ t: '杯型', opts: ['中杯', '大杯'] }, { t: '糖度', opts: ['标准糖', '五分糖', '无糖'] }, { t: '冰度', opts: ['正常冰', '去冰'] }] },
+      }
+      function openCustomize(name) {
+        var sheet = document.getElementById('gd-spec-sheet'); if (!sheet) return
+        var cfg = SPEC_CONFIG[name] || { g: 'g-amber', em: '🍽', groups: [{ t: '份量', opts: ['标准'] }] }
+        var im = sheet.querySelector('.spec-im'); if (im) { im.className = 'spec-im ' + cfg.g; im.innerHTML = '<span class="em">' + cfg.em + '</span>' }
+        var nm = sheet.querySelector('.spec-meta .nm'); if (nm) nm.textContent = name + ' · 去定制'
+        var bd = sheet.querySelector('.spec-bd')
+        if (bd) {
+          bd.innerHTML = cfg.groups.map(function (gr) {
+            return '<div class="sg"><div class="hd"><div class="t">' + gr.t + '<span class="need">（任选 1 份）</span></div></div><div class="opts gd-flavor">' +
+              gr.opts.map(function (o, oi) { return '<button class="opt' + (oi === 0 ? ' on' : '') + '">' + o + '</button>' }).join('') + '</div></div>'
+          }).join('')
+          bd.querySelectorAll('.opts.gd-flavor').forEach(function (grp) {
+            grp.querySelectorAll('.opt').forEach(function (op) {
+              op.addEventListener('click', function () { grp.querySelectorAll('.opt').forEach(function (x) { x.classList.remove('on') }); op.classList.add('on') })
+            })
+          })
+        }
+        showSheet('gd-spec-sheet')
+      }
+    </script>
+    <script>
+      // 商品详情：选规格/选项 + 数量步进 + 套餐已选实时联动
+      (function () {
+        var TICK = '<span class="cb-tick"><svg class="i ix"><use href="#i-check" /></svg></span>'
+        function setSel(item, on) {
+          item.classList.toggle('sel', on)
+          var t = item.querySelector('.cb-tick')
+          if (on && !t) item.querySelector('.cb-thumb').insertAdjacentHTML('afterend', TICK)
+          if (!on && t) t.remove()
+        }
+        // 已选行（descriptor 驱动）：图标 + (名称 / 规格明细 / ×1) + 去定制/编辑 + (删除)，对齐霸王茶姬「已选商品」
+        function makeSelRow(d, inSheet) {
+          var row = document.createElement('div')
+          row.className = 'row'
+          row.innerHTML = '<div class="ico ' + d.g + '">' + d.em + '</div>' +
+            '<div class="meta"><span class="nm">' + d.nm + '</span>' + (d.spec ? '<span class="spec">' + d.spec + '</span>' : '') + '<span class="qty">×1</span></div>' +
+            '<button class="edit" title="编辑"><svg class="i"><use href="#i-edit" /></svg>' + (inSheet ? '' : '去定制') + '</button>' +
+            (inSheet || d.fixed ? '' : '<button class="del"><svg class="i ix"><use href="#i-close" /></svg></button>')
+          row.querySelector('.edit').addEventListener('click', function () { openCustomize(d.nm) })
+          var del = row.querySelector('.del')
+          if (del && d.it) del.addEventListener('click', function () { setSel(d.it, false); rebuildComboCart() })
+          return row
+        }
+        // 已选条折叠态的小圆缩略图（emoji + ✏️），点 ✏️ 直接去定制、点缩略图开弹层
+        function makeThumb(d) {
+          var el = document.createElement('div')
+          el.className = 't ico ' + d.g
+          el.innerHTML = d.em + '<span class="pen"><svg class="i"><use href="#i-edit" /></svg></span>'
+          el.querySelector('.pen').addEventListener('click', function (e) { e.stopPropagation(); openCustomize(d.nm) })
+          return el
+        }
+        // 套餐已选：汇总「已包含固定项」+「可选组已选项」→ 折叠条缩略图 + 展开弹层明细 + 计数 + 底部 brief
+        function rebuildComboCart() {
+          var combo = document.querySelector('#page-goods .gd-demo.is-combo')
+          if (!combo) return
+          var thumbs = combo.querySelector('.gd-selbar-thumbs')
+          if (thumbs) thumbs.innerHTML = ''
+          var fixedList = document.querySelector('#gd-selected-pop .gd-sel-fixed')
+          var optList = document.querySelector('#gd-selected-pop .gd-sel-opt')
+          if (fixedList) fixedList.innerHTML = ''
+          if (optList) optList.innerHTML = ''
+          var fixedDescs = [], optDescs = []
+          // 已包含（固定项）：始终在已选里，仅可编辑、不可删
+          combo.querySelectorAll('.gd-included .inc-card').forEach(function (c) {
+            fixedDescs.push({ nm: c.dataset.nm, spec: c.dataset.spec || '', g: c.dataset.g || '', em: c.dataset.em || '🍽', fixed: true })
+          })
+          // 可选组已选项（如饮品）：可编辑 + 可删
+          combo.querySelectorAll('.combo-pick .cb-item.sel').forEach(function (it) {
+            var thumb = it.querySelector('.cb-thumb'), em = thumb ? thumb.textContent.trim() : ''
+            var m = thumb && thumb.className.match(/g-[a-z]+/), g = m ? m[0] : ''
+            var nm = it.querySelector('.cb-nm') ? it.querySelector('.cb-nm').textContent : ''
+            optDescs.push({ nm: nm, spec: it.getAttribute('data-spec') || '', g: g, em: em, it: it })
+          })
+          var descs = fixedDescs.concat(optDescs)
+          descs.forEach(function (d) { if (thumbs) thumbs.appendChild(makeThumb(d)) }) // 折叠条：小圆缩略图
+          fixedDescs.forEach(function (d) { if (fixedList) fixedList.appendChild(makeSelRow(d, true)) })
+          optDescs.forEach(function (d) { if (optList) optList.appendChild(makeSelRow(d, true)) })
+          // 可选组为空则整组隐藏；分组计数
+          var fixedGrp = document.querySelector('#gd-selected-pop .gd-sel-grp-fixed')
+          var optGrp = document.querySelector('#gd-selected-pop .gd-sel-grp-opt')
+          if (fixedGrp) fixedGrp.classList.toggle('empty', fixedDescs.length === 0)
+          if (optGrp) optGrp.classList.toggle('empty', optDescs.length === 0)
+          var fc = document.querySelector('#gd-selected-pop .gd-sel-grp-fixed .gd-sel-cnt'); if (fc) fc.textContent = ' · ' + fixedDescs.length + ' 件'
+          var oc = document.querySelector('#gd-selected-pop .gd-sel-grp-opt .gd-sel-cnt'); if (oc) oc.textContent = ' · ' + optDescs.length + ' 件'
+          var includedCount = combo.querySelectorAll('.gd-included .inc-card').length
+          var singleGroups = combo.querySelectorAll('.combo-pick[data-pick="single"]').length
+          var total = includedCount + singleGroups
+          var bar = combo.querySelector('.gd-selbar .selnum'); if (bar) bar.textContent = '已选 ' + descs.length + ' 件'
+          var snum = document.querySelector('#gd-selected-pop .gd-sel-num'); if (snum) snum.textContent = '(' + descs.length + ' / ' + total + ' 件)'
+          refreshBrief(combo)
+        }
+        // 底部已选明细：规格 + 做法 + 加料 实时汇总（对齐霸王茶姬 footer 选中明细）
+        function adName(card) { var q = +card.dataset.qty || 0; return q > 1 ? card.dataset.nm + '×' + q : card.dataset.nm }
+        function refreshBrief(demo) {
+          if (!demo) return
+          var brief = demo.querySelector('.gd-ft .brief'); if (!brief) return
+          var parts = []
+          if (demo.classList.contains('is-single')) {
+            var cup = demo.querySelector('.combo-pick.cups .cb-item.sel .cb-nm')
+            if (cup) parts.push(cup.textContent)
+            demo.querySelectorAll('.opts.gd-flavor .opt.on').forEach(function (o) { parts.push(o.textContent.trim()) })
+            demo.querySelectorAll('.gd-addons .ad-card.on').forEach(function (c) { parts.push(adName(c)) })
+          } else {
+            demo.querySelectorAll('.gd-included .inc-card').forEach(function (c) { parts.push(c.dataset.nm) })
+            demo.querySelectorAll('.combo-pick .cb-item.sel .cb-nm').forEach(function (n) { parts.push(n.textContent) })
+            demo.querySelectorAll('.gd-addons .ad-card.on').forEach(function (c) { parts.push(adName(c)) })
+          }
+          brief.textContent = parts.join(' · ') || '请选择'
+        }
+        // 可点选网格（single 单选 / multi 多选）
+        document.querySelectorAll('#page-goods .combo-pick[data-pick]').forEach(function (grid) {
+          var mode = grid.getAttribute('data-pick')
+          grid.querySelectorAll('.cb-item').forEach(function (item) {
+            item.addEventListener('click', function () {
+              if (mode === 'single') {
+                grid.querySelectorAll('.cb-item').forEach(function (x) { setSel(x, false) })
+                setSel(item, true)
+              } else {
+                setSel(item, !item.classList.contains('sel'))
+              }
+              var nm = item.querySelector('.cb-nm') ? item.querySelector('.cb-nm').textContent : ''
+              if (mode === 'single') {
+                // 选中后清掉必选未齐的高亮/提示（描边、脉冲、您还需选择 N 份）
+                var sgAny = grid.closest('.sg')
+                if (sgAny) {
+                  sgAny.classList.remove('need-hl', 'req-active', 'gd-req-flash')
+                  var hint = sgAny.querySelector('.hd .t .req-hint'); if (hint) hint.classList.remove('show')
+                  var need = sgAny.querySelector('.hd .need')
+                  if (need) need.textContent = '（已选 ' + nm + '）'
+                }
+              }
+              var demo = item.closest('.gd-demo')
+              if (demo.classList.contains('is-combo')) rebuildComboCart(); else refreshBrief(demo)
+            })
+          })
+        })
+        document.querySelectorAll('#page-goods .gd-ft .stp').forEach(function (stp) {
+          var q = stp.querySelector('.q')
+          var pl = stp.querySelector('.pl'), mi = stp.querySelector('.mi')
+          if (pl && q) pl.addEventListener('click', function () { q.textContent = (+q.textContent + 1) })
+          if (mi && q) mi.addEventListener('click', function () { q.textContent = Math.max(1, +q.textContent - 1) })
+        })
+        // 做法（甜度 / 冰度）：组内单选
+        document.querySelectorAll('#page-goods .opts.gd-flavor').forEach(function (grp) {
+          grp.querySelectorAll('.opt').forEach(function (op) {
+            op.addEventListener('click', function () {
+              grp.querySelectorAll('.opt').forEach(function (x) { x.classList.remove('on') })
+              op.classList.add('on')
+              refreshBrief(op.closest('.gd-demo'))
+            })
+          })
+        })
+        // 小料（霸王茶姬 attach-selector 卡片式）：名 + desc + 价 + 行内三段步进器；多选 + 数量，减到 0 取消，无浮标 badge
+        var MI = '<svg class="i ix" style="stroke-width:2.5"><use href="#i-minus" /></svg>'
+        var PL = '<svg class="i ix" style="stroke-width:2.5"><use href="#i-plus" /></svg>'
+        document.querySelectorAll('#page-goods .gd-addons .ad-card').forEach(function (ad) {
+          var nm = '<span class="ad-nm">' + ad.dataset.nm + '</span>'
+          var ap = '<span class="ad-ap">' + ad.dataset.ap + '</span>'
+          var isTwo = ad.closest('.gd-addons').classList.contains('two')
+          if (ad.classList.contains('dis')) { // 售罄：置灰 + 角标，无控件不可点
+            ad.innerHTML = nm + ap + '<span class="ad-ctrl"></span><span class="ad-soldout">售罄</span>'
+            return
+          }
+          ad.dataset.qty = '0'
+          function render() {
+            var q = +ad.dataset.qty
+            ad.classList.toggle('on', q > 0)
+            if (isTwo) {
+              // 2 列态：⊖ 名 ¥价 ⊕，− 与 + 钉两端恒显，数量落右上角角标
+              ad.innerHTML = '<button class="sb sub" data-d="-1">' + MI + '</button>' + nm + ap + '<button class="sb add" data-d="1">' + PL + '</button>' + (q > 0 ? '<span class="ad-qty">' + q + '</span>' : '')
+            } else {
+              // 整行态：步进器恒定渲染，未选时 − 与数字靠 CSS 隐藏但占位 → 加减位预留
+              var ctrl = '<span class="ad-stepper"><button class="sb sub" data-d="-1">' + MI + '</button><span class="sn">' + (q > 0 ? q : '') + '</span><button class="sb add" data-d="1">' + PL + '</button></span>'
+              ad.innerHTML = nm + ap + '<span class="ad-ctrl">' + ctrl + '</span>'
+            }
+          }
+          ad.addEventListener('click', function (e) {
+            var btn = e.target.closest('[data-d]')
+            var q = +ad.dataset.qty
+            if (btn) q += (btn.dataset.d === '-1' ? -1 : 1)
+            else q = q > 0 ? q : 1 // 点卡片空白：未选则选 1，已选不动（用 ±调）
+            ad.dataset.qty = String(Math.max(0, q))
+            render()
+            refreshBrief(ad.closest('.gd-demo'))
+          })
+          render()
+        })
+        rebuildComboCart()
+        var singleDemo = document.querySelector('#page-goods .gd-demo.is-single')
+        if (singleDemo) refreshBrief(singleDemo)
+      })()
     </script>
   </body>
 </html>
