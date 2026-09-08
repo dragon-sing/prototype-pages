@@ -45,20 +45,40 @@
     t0: Date.now(), left: false, err: '', fired: false
   }
 
-  // 尽早挂监听，跳走的瞬间就能记到
-  function markLeft(){ S.left = true }
+  // ===== 关闭中转页：支付宝内置浏览器的 AlipayJSBridge =====
+  // 社区口径（非官方文档），拿不到桥就静默跳过，不影响跳转本身
+  S.closed = false
+  function closeWebview(why){
+    if (S.closed) return
+    try {
+      var b = window.AlipayJSBridge
+      if (b && b.call) { b.call('closeWebview'); S.closed = true; S.closeWhy = why }
+    } catch (e) { S.closeErr = (e && e.message) ? e.message : String(e) }
+  }
+  S.closeWebview = closeWebview
+  document.addEventListener('AlipayJSBridgeReady', function(){ S.bridgeReady = true }, false)
+
+  // 跳成功（页面进后台）后把中转页关掉，这样从小程序返回时不会退回到这里
+  function onLeave(){
+    if (S.left) return
+    S.left = true
+    setTimeout(function(){ closeWebview('jumped') }, 800)
+  }
   document.addEventListener('visibilitychange', function(){
-    if (document.hidden) markLeft()
+    if (document.hidden) onLeave()
+    else if (S.left) closeWebview('returned')   // 兜底：真退回来了就立刻关掉
   })
-  window.addEventListener('pagehide', markLeft)
-  window.addEventListener('blur', markLeft)
+  window.addEventListener('pagehide', onLeave)
+  window.addEventListener('blur', onLeave)
 
   // 立刻跳，不等任何东西
+  // 用 replace 而不是 href：不在 webview 历史里留记录
   try {
-    location.href = target
+    location.replace(target)
     S.fired = true
   } catch (e) {
     S.err = (e && e.message) ? e.message : String(e)
+    try { location.href = target; S.fired = true } catch (e2) {}
   }
 })()
 </script>
@@ -183,12 +203,12 @@
 
   log('环境：' + S.env)
   log('跳转方式：' + S.how)
-  log(S.fired ? '→ 已在 <head> 阶段发起跳转（0 延迟）' : '✗ 发起失败')
+  log(S.fired ? '→ 已在 <head> 阶段发起跳转（0 延迟，location.replace）' : '✗ 发起失败')
   if (S.err) log('✗ 抛异常：' + S.err)
 
   function jump(url, label){
     log('→ 尝试 ' + label)
-    try { location.href = url }
+    try { location.replace(url) }
     catch (e) { log('✗ 抛异常：' + (e && e.message ? e.message : String(e))) }
   }
   $('goScheme').addEventListener('click', function(){ jump(S.scheme, '裸 scheme（手动）') })
@@ -201,6 +221,8 @@
       $('subtitle').textContent = '如果没看到小程序，说明是唤起后又被退回'
       $('verdict').innerHTML = '<span class="tag ok">✓ 页面切到后台 —— 跳转成功</span>'
       log('✓ 检测到页面离开前台，判定唤起成功')
+      log(S.closed ? ('✓ 已调用 closeWebview 关闭中转页（' + S.closeWhy + '）')
+                   : ('✗ 未能关闭中转页｜桥就绪=' + !!S.bridgeReady + ' 桥存在=' + !!window.AlipayJSBridge))
     } else {
       $('title').textContent = '没有跳转成功'
       $('subtitle').textContent = '可以用下面的按钮手动再试一次'
