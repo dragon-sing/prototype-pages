@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>支付宝小程序跳转测试页</title>
+<title>正在打开小程序…</title>
 <style>
   :root{
     --bg:#f5f6f8; --card:#fff; --fg:#1a1c1f; --muted:#6b7280;
@@ -19,230 +19,178 @@
   }
   *{box-sizing:border-box}
   body{
-    margin:0; padding:16px 14px 48px;
+    margin:0; padding:24px 16px 40px;
     background:var(--bg); color:var(--fg);
     font:15px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
     -webkit-text-size-adjust:100%;
   }
-  h1{font-size:19px; margin:0 0 4px}
-  .sub{color:var(--muted); font-size:13px; margin:0 0 18px}
+  .hero{text-align:center; padding:26px 0 22px}
+  .spinner{
+    width:38px; height:38px; margin:0 auto 16px;
+    border:3px solid var(--line); border-top-color:var(--accent);
+    border-radius:50%; animation:spin .8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .hero h1{font-size:18px; margin:0 0 6px; font-weight:600}
+  .hero p{margin:0; color:var(--muted); font-size:13.5px}
   .card{
     background:var(--card); border:1px solid var(--line); border-radius:12px;
-    padding:14px; margin-bottom:14px;
+    padding:14px; margin-bottom:12px;
   }
-  .card h2{font-size:14px; margin:0 0 10px; color:var(--muted); font-weight:600; letter-spacing:.02em}
-  label{display:block; font-size:13px; color:var(--muted); margin:10px 0 4px}
-  input{
-    width:100%; padding:10px 11px; font-size:14px; font-family:inherit;
-    background:var(--bg); color:var(--fg);
-    border:1px solid var(--line); border-radius:8px;
-  }
-  input:focus{outline:2px solid var(--accent); outline-offset:-1px; border-color:transparent}
+  .card h2{font-size:13px; margin:0 0 10px; color:var(--muted); font-weight:600}
+  .kv{display:flex; gap:10px; padding:6px 0; border-bottom:1px solid var(--line); font-size:13px}
+  .kv:last-child{border-bottom:0}
+  .kv .k{color:var(--muted); flex:0 0 70px}
+  .kv .v{flex:1; word-break:break-all}
   button{
-    width:100%; padding:13px; margin-top:10px; font-size:15px; font-weight:600;
+    width:100%; padding:13px; margin-top:9px; font-size:15px; font-weight:600;
     font-family:inherit; border:0; border-radius:9px;
     background:var(--accent); color:var(--accent-fg); cursor:pointer;
   }
   button.ghost{background:transparent; color:var(--accent); border:1px solid var(--accent)}
   button:active{opacity:.75}
-  .kv{display:flex; gap:10px; padding:6px 0; border-bottom:1px solid var(--line); font-size:13px}
-  .kv:last-child{border-bottom:0}
-  .kv .k{color:var(--muted); flex:0 0 78px}
-  .kv .v{flex:1; word-break:break-all}
-  code, .url{
+  .url{
     display:block; background:var(--code-bg); border:1px solid var(--line);
     border-radius:8px; padding:9px 10px; margin:6px 0 0;
-    font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font:11.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
     word-break:break-all; white-space:pre-wrap;
   }
   .tag{display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600}
   .tag.ok{background:color-mix(in srgb,var(--ok) 18%,transparent); color:var(--ok)}
   .tag.warn{background:color-mix(in srgb,var(--warn) 18%,transparent); color:var(--warn)}
   .tag.err{background:color-mix(in srgb,var(--err) 18%,transparent); color:var(--err)}
-  .note{font-size:12.5px; color:var(--muted); margin-top:8px}
-  #log{font:12px/1.6 ui-monospace,Menlo,monospace; color:var(--muted); white-space:pre-wrap; word-break:break-all; margin:0}
+  #verdict{font-size:14px; font-weight:600; margin:0 0 8px}
+  #log{font:11.5px/1.6 ui-monospace,Menlo,monospace; color:var(--muted); white-space:pre-wrap; word-break:break-all; margin:0}
+  [hidden]{display:none!important}
 </style>
 </head>
 <body>
 
-<h1>支付宝小程序跳转测试页</h1>
-<p class="sub">用来在真机上验证 <code style="display:inline;padding:1px 5px;border:0">alipays://</code> scheme 能不能拉起小程序，以及在哪些容器里会被拦。</p>
-
-<div class="card">
-  <h2>当前环境</h2>
-  <div class="kv"><span class="k">容器判定</span><span class="v" id="env">—</span></div>
-  <div class="kv"><span class="k">协议</span><span class="v" id="proto">—</span></div>
-  <div class="kv"><span class="k">UA</span><span class="v" id="ua">—</span></div>
-  <p class="note" id="envNote"></p>
+<div class="hero">
+  <div class="spinner" id="spinner"></div>
+  <h1 id="title">正在打开支付宝小程序…</h1>
+  <p id="subtitle">如果没有自动跳转，请点下面的按钮</p>
 </div>
 
-<div class="card">
-  <h2>跳转参数</h2>
-  <label for="appId">appId（目标支付宝小程序）</label>
-  <input id="appId" placeholder="2021xxxxxxxxxxxx" autocomplete="off" spellcheck="false">
-
-  <label for="page">page（小程序页面路径，不带则跳首页）</label>
-  <input id="page" placeholder="pages/router/main" autocomplete="off" spellcheck="false">
-
-  <label for="query">query（透传启动参数，原文，格式 k=v&amp;k=v）</label>
-  <input id="query" placeholder="q=https://sh6.co/12345" autocomplete="off" spellcheck="false">
-  <p class="note">这里填<strong>原文</strong>，页面会按官方要求自动做 UrlEncode。<code style="display:inline;padding:1px 5px;border:0">ds.alipay.com</code> 那条会再整体编一层。</p>
-</div>
-
-<div class="card">
-  <h2>方式一 · 裸 scheme</h2>
-  <div class="url" id="urlScheme">—</div>
+<div class="card" id="fallback" hidden>
+  <h2>手动重试</h2>
   <button id="goScheme">用裸 scheme 跳转</button>
-  <button class="ghost" id="copyScheme">复制这条链接</button>
-  <p class="note">支付宝客户端内部（含内置浏览器）通常能直接吃这个。外部浏览器多半会被拦。</p>
+  <button class="ghost" id="goHttps">用 https 包装跳转</button>
 </div>
 
 <div class="card">
-  <h2>方式二 · ds.alipay.com 包装</h2>
+  <h2>跳转目标（已写死）</h2>
+  <div class="kv"><span class="k">appId</span><span class="v">2021003159665300</span></div>
+  <div class="kv"><span class="k">page</span><span class="v">pages/router/main</span></div>
+  <div class="kv"><span class="k">q</span><span class="v">https://sh6.co/106940</span></div>
+</div>
+
+<div class="card">
+  <h2>环境</h2>
+  <div class="kv"><span class="k">容器</span><span class="v" id="env">—</span></div>
+  <div class="kv"><span class="k">UA</span><span class="v" id="ua">—</span></div>
+</div>
+
+<div class="card">
+  <h2>结果</h2>
+  <p id="verdict">—</p>
+  <p id="log"></p>
+</div>
+
+<div class="card">
+  <h2>实际拼出的链接</h2>
+  <div class="url" id="urlScheme">—</div>
   <div class="url" id="urlHttps">—</div>
-  <button id="goHttps">用 https 包装跳转</button>
-  <button class="ghost" id="copyHttps">复制这条链接</button>
-  <p class="note">官方指定的「从浏览器唤起」写法：scheme 整体 encodeURIComponent 后拼在 <code style="display:inline;padding:1px 5px;border:0">https://ds.alipay.com/?scheme=</code> 后面。</p>
-</div>
-
-<div class="card">
-  <h2>日志</h2>
-  <p id="log">等待操作…</p>
 </div>
 
 <script>
 (function(){
   var $ = function(id){ return document.getElementById(id) }
-  var logEl = $('log'), lines = []
-
+  var lines = []
   function log(msg){
-    var t = new Date().toTimeString().slice(0,8)
-    lines.unshift('[' + t + '] ' + msg)
-    logEl.textContent = lines.slice(0, 30).join('\n')
+    lines.unshift('[' + new Date().toTimeString().slice(0,8) + '] ' + msg)
+    $('log').textContent = lines.slice(0,20).join('\n')
   }
 
-  // ---- 环境检测 ----
+  // ===== 写死的跳转目标 =====
+  var APP_ID = '2021003159665300'
+  var PAGE   = 'pages/router/main'
+  var QUERY  = 'q=https://sh6.co/106940'
+
+  // page 路径部分不编码，只编 ? 之后的页面参数（对齐官方示例）
+  function encodePage(p){
+    var i = p.indexOf('?')
+    return i === -1 ? p : p.slice(0, i + 1) + encodeURIComponent(p.slice(i + 1))
+  }
+
+  var schemeUrl = 'alipays://platformapi/startapp'
+    + '?appId=' + encodeURIComponent(APP_ID)
+    + '&page='  + encodePage(PAGE)
+    + '&query=' + encodeURIComponent(QUERY)
+  var httpsUrl = 'https://ds.alipay.com/?scheme=' + encodeURIComponent(schemeUrl)
+
+  $('urlScheme').textContent = schemeUrl
+  $('urlHttps').textContent  = httpsUrl
+
+  // ===== 环境判定 =====
   var ua = navigator.userAgent
   var isAlipay = /AlipayClient/i.test(ua)
   var isWeixin = /MicroMessenger/i.test(ua)
   var isQQ     = /\bQQ\/|QQBrowser/i.test(ua)
 
-  var envName, envClass, envNote
-  if (isAlipay) {
-    envName = '支付宝客户端'; envClass = 'ok'
-    envNote = '同 App 内跳自家小程序，裸 scheme 正常应当直接生效，不该出现「即将访问其他App」。'
-  } else if (isWeixin) {
-    envName = '微信内置浏览器'; envClass = 'err'
-    envNote = '微信里 alipays:// 一定会被拦。微信内 H5 跳小程序只能用 wx-open-launch-weapp 开放标签，且要求已认证服务号 + JS 接口安全域名。'
-  } else if (isQQ) {
-    envName = 'QQ / QQ浏览器'; envClass = 'warn'
-    envNote = '第三方容器，跳外部 App 大概率被拦截页挡住。'
-  } else {
-    envName = '普通浏览器'; envClass = 'warn'
-    envNote = '外部浏览器建议用方式二（ds.alipay.com 包装），裸 scheme 常被静默丢弃。'
-  }
+  var envName, envClass
+  if (isAlipay)      { envName = '支付宝客户端';   envClass = 'ok'   }
+  else if (isWeixin) { envName = '微信内置浏览器'; envClass = 'err'  }
+  else if (isQQ)     { envName = 'QQ / QQ浏览器';  envClass = 'warn' }
+  else               { envName = '普通浏览器';     envClass = 'warn' }
 
   $('env').innerHTML = '<span class="tag ' + envClass + '">' + envName + '</span>'
-  $('envNote').textContent = envNote
-  $('proto').textContent = location.protocol + (location.protocol === 'https:' ? ' ✓' : ' ← 非 https，部分容器会额外限制')
   $('ua').textContent = ua
 
-  // ---- 参数：URL 覆盖 > 默认值 ----
-  var qs = new URLSearchParams(location.search)
-  // 从路径最后一段猜品牌 id，方便直接用 /12345 这种形式测
-  var seg = location.pathname.split('/').filter(Boolean).pop() || ''
-  var brandGuess = /^\d+$/.test(seg) ? seg : '12345'
+  // 支付宝内用裸 scheme；其它容器用官方指定的 https 包装
+  var primaryUrl   = isAlipay ? schemeUrl : httpsUrl
+  var primaryLabel = isAlipay ? '裸 scheme' : 'https 包装'
 
-  $('appId').value = qs.get('appId') || '2021004191633566'
-  $('page').value  = qs.get('page')  || 'pages/router/main'
-  $('query').value = qs.get('q')     || ('q=https://sh6.co/' + brandGuess)
-
-  // ---- 拼链接 ----
-  // page 的路径部分保持原样，只对 ? 之后的页面参数编码（对齐官方示例）
-  function encodePage(page){
-    if (!page) return ''
-    var i = page.indexOf('?')
-    if (i === -1) return page
-    return page.slice(0, i + 1) + encodeURIComponent(page.slice(i + 1))
-  }
-
-  var schemeUrl = '', httpsUrl = ''
-
-  function build(){
-    var appId = $('appId').value.trim()
-    var page  = $('page').value.trim()
-    var query = $('query').value.trim()
-
-    if (!appId) {
-      schemeUrl = httpsUrl = ''
-      $('urlScheme').textContent = '请先填 appId'
-      $('urlHttps').textContent  = '请先填 appId'
-      return
-    }
-
-    schemeUrl = 'alipays://platformapi/startapp?appId=' + encodeURIComponent(appId)
-    if (page)  schemeUrl += '&page='  + encodePage(page)
-    if (query) schemeUrl += '&query=' + encodeURIComponent(query)
-
-    httpsUrl = 'https://ds.alipay.com/?scheme=' + encodeURIComponent(schemeUrl)
-
-    $('urlScheme').textContent = schemeUrl
-    $('urlHttps').textContent  = httpsUrl
-  }
-
-  ;['appId','page','query'].forEach(function(id){
-    $(id).addEventListener('input', build)
+  // ===== 跳转 + 成功判定 =====
+  var left = false
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden) left = true
   })
-  build()
+  window.addEventListener('pagehide', function(){ left = true })
 
-  // ---- 跳转 ----
   function jump(url, label){
-    if (!url) { log('✗ ' + label + '：链接为空，先填 appId'); return }
-    log('→ ' + label + '：' + url)
-    var hidden = false
-    var onHide = function(){ if (document.hidden) hidden = true }
-    document.addEventListener('visibilitychange', onHide)
-
-    try {
-      location.href = url
-    } catch (e) {
-      log('✗ 抛异常：' + (e && e.message ? e.message : String(e)))
-    }
-
-    setTimeout(function(){
-      document.removeEventListener('visibilitychange', onHide)
-      if (hidden) {
-        log('✓ 页面被切到后台 —— 很可能已成功唤起')
-      } else {
-        log('✗ 2.5s 内页面没离开前台 —— 大概率被拦截或 scheme 无效')
-      }
-    }, 2500)
+    log('→ 尝试 ' + label)
+    try { location.href = url }
+    catch (e) { log('✗ 抛异常：' + (e && e.message ? e.message : String(e))) }
   }
 
-  $('goScheme').addEventListener('click', function(){ jump(schemeUrl, '裸 scheme') })
-  $('goHttps').addEventListener('click',  function(){ jump(httpsUrl,  'https 包装') })
-
-  function copy(text, label){
-    if (!text) { log('✗ 没有可复制的内容'); return }
-    var done = function(){ log('✓ 已复制' + label) }
-    var fail = function(){ log('✗ 复制失败，请长按上面的链接手动选中') }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done, fail)
+  function settle(){
+    $('spinner').hidden = true
+    if (left) {
+      $('title').textContent = '已唤起小程序'
+      $('subtitle').textContent = '如果没看到小程序，说明是唤起后又被退回'
+      $('verdict').innerHTML = '<span class="tag ok">✓ 页面切到后台 —— 跳转成功</span>'
+      log('✓ 检测到页面离开前台，判定唤起成功')
     } else {
-      var ta = document.createElement('textarea')
-      ta.value = text
-      ta.style.cssText = 'position:fixed;top:-9999px'
-      document.body.appendChild(ta)
-      ta.select()
-      try { document.execCommand('copy') ? done() : fail() } catch(e){ fail() }
-      document.body.removeChild(ta)
+      $('title').textContent = '没有跳转成功'
+      $('subtitle').textContent = '可以用下面的按钮手动再试一次'
+      $('verdict').innerHTML = '<span class="tag err">✗ 页面没离开前台 —— 被拦截或 scheme 无效</span>'
+      log('✗ 2.5s 内页面仍在前台，判定失败')
+      $('fallback').hidden = false
     }
   }
 
-  $('copyScheme').addEventListener('click', function(){ copy(schemeUrl, '裸 scheme') })
-  $('copyHttps').addEventListener('click',  function(){ copy(httpsUrl,  'https 包装链接') })
+  $('goScheme').addEventListener('click', function(){ jump(schemeUrl, '裸 scheme（手动）') })
+  $('goHttps').addEventListener('click',  function(){ jump(httpsUrl,  'https 包装（手动）') })
 
   log('环境：' + envName)
+  log('自动跳转方式：' + primaryLabel)
+
+  // 留一点时间让首屏画出来，再自动跳
+  setTimeout(function(){
+    jump(primaryUrl, primaryLabel + '（自动）')
+    setTimeout(settle, 2500)
+  }, 400)
 })()
 </script>
 </body>
