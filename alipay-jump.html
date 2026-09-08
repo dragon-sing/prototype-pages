@@ -4,6 +4,65 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>正在打开小程序…</title>
+
+<!-- 跳转逻辑放在最前面：不等 DOM、不等样式，解析到这里立刻发起 -->
+<script>
+(function(){
+  var APP_ID = '2021003159665300'
+  var PAGE   = 'pages/router/main'
+  var QUERY  = 'q=https://sh6.co/106940'
+
+  // page 路径部分不编码，只编 ? 之后的页面参数（对齐官方示例）
+  function encodePage(p){
+    var i = p.indexOf('?')
+    return i === -1 ? p : p.slice(0, i + 1) + encodeURIComponent(p.slice(i + 1))
+  }
+
+  var scheme = 'alipays://platformapi/startapp'
+    + '?appId=' + encodeURIComponent(APP_ID)
+    + '&page='  + encodePage(PAGE)
+    + '&query=' + encodeURIComponent(QUERY)
+  var https_ = 'https://ds.alipay.com/?scheme=' + encodeURIComponent(scheme)
+
+  var ua = navigator.userAgent
+  var isAlipay = /AlipayClient/i.test(ua)
+  var isWeixin = /MicroMessenger/i.test(ua)
+  var isQQ     = /\bQQ\/|QQBrowser/i.test(ua)
+
+  var env = isAlipay ? '支付宝客户端'
+          : isWeixin ? '微信内置浏览器'
+          : isQQ     ? 'QQ / QQ浏览器'
+          :            '普通浏览器'
+  var cls = isAlipay ? 'ok' : isWeixin ? 'err' : 'warn'
+
+  // 支付宝内走裸 scheme；其它容器走官方指定的 https 包装
+  var target = isAlipay ? scheme : https_
+  var how    = isAlipay ? '裸 scheme' : 'https 包装'
+
+  var S = window.__JUMP = {
+    scheme: scheme, https: https_, target: target, how: how,
+    env: env, cls: cls, ua: ua,
+    t0: Date.now(), left: false, err: '', fired: false
+  }
+
+  // 尽早挂监听，跳走的瞬间就能记到
+  function markLeft(){ S.left = true }
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden) markLeft()
+  })
+  window.addEventListener('pagehide', markLeft)
+  window.addEventListener('blur', markLeft)
+
+  // 立刻跳，不等任何东西
+  try {
+    location.href = target
+    S.fired = true
+  } catch (e) {
+    S.err = (e && e.message) ? e.message : String(e)
+  }
+})()
+</script>
+
 <style>
   :root{
     --bg:#f5f6f8; --card:#fff; --fg:#1a1c1f; --muted:#6b7280;
@@ -88,6 +147,8 @@
 <div class="card">
   <h2>环境</h2>
   <div class="kv"><span class="k">容器</span><span class="v" id="env">—</span></div>
+  <div class="kv"><span class="k">跳转方式</span><span class="v" id="how">—</span></div>
+  <div class="kv"><span class="k">发起耗时</span><span class="v" id="t0">—</span></div>
   <div class="kv"><span class="k">UA</span><span class="v" id="ua">—</span></div>
 </div>
 
@@ -105,6 +166,7 @@
 
 <script>
 (function(){
+  var S = window.__JUMP
   var $ = function(id){ return document.getElementById(id) }
   var lines = []
   function log(msg){
@@ -112,61 +174,29 @@
     $('log').textContent = lines.slice(0,20).join('\n')
   }
 
-  // ===== 写死的跳转目标 =====
-  var APP_ID = '2021003159665300'
-  var PAGE   = 'pages/router/main'
-  var QUERY  = 'q=https://sh6.co/106940'
+  $('env').innerHTML   = '<span class="tag ' + S.cls + '">' + S.env + '</span>'
+  $('how').textContent = S.how + '（在 <head> 里立即发起，无延迟）'
+  $('t0').textContent  = (Date.now() - S.t0) + ' ms 前已发起'
+  $('ua').textContent  = S.ua
+  $('urlScheme').textContent = S.scheme
+  $('urlHttps').textContent  = S.https
 
-  // page 路径部分不编码，只编 ? 之后的页面参数（对齐官方示例）
-  function encodePage(p){
-    var i = p.indexOf('?')
-    return i === -1 ? p : p.slice(0, i + 1) + encodeURIComponent(p.slice(i + 1))
-  }
-
-  var schemeUrl = 'alipays://platformapi/startapp'
-    + '?appId=' + encodeURIComponent(APP_ID)
-    + '&page='  + encodePage(PAGE)
-    + '&query=' + encodeURIComponent(QUERY)
-  var httpsUrl = 'https://ds.alipay.com/?scheme=' + encodeURIComponent(schemeUrl)
-
-  $('urlScheme').textContent = schemeUrl
-  $('urlHttps').textContent  = httpsUrl
-
-  // ===== 环境判定 =====
-  var ua = navigator.userAgent
-  var isAlipay = /AlipayClient/i.test(ua)
-  var isWeixin = /MicroMessenger/i.test(ua)
-  var isQQ     = /\bQQ\/|QQBrowser/i.test(ua)
-
-  var envName, envClass
-  if (isAlipay)      { envName = '支付宝客户端';   envClass = 'ok'   }
-  else if (isWeixin) { envName = '微信内置浏览器'; envClass = 'err'  }
-  else if (isQQ)     { envName = 'QQ / QQ浏览器';  envClass = 'warn' }
-  else               { envName = '普通浏览器';     envClass = 'warn' }
-
-  $('env').innerHTML = '<span class="tag ' + envClass + '">' + envName + '</span>'
-  $('ua').textContent = ua
-
-  // 支付宝内用裸 scheme；其它容器用官方指定的 https 包装
-  var primaryUrl   = isAlipay ? schemeUrl : httpsUrl
-  var primaryLabel = isAlipay ? '裸 scheme' : 'https 包装'
-
-  // ===== 跳转 + 成功判定 =====
-  var left = false
-  document.addEventListener('visibilitychange', function(){
-    if (document.hidden) left = true
-  })
-  window.addEventListener('pagehide', function(){ left = true })
+  log('环境：' + S.env)
+  log('跳转方式：' + S.how)
+  log(S.fired ? '→ 已在 <head> 阶段发起跳转（0 延迟）' : '✗ 发起失败')
+  if (S.err) log('✗ 抛异常：' + S.err)
 
   function jump(url, label){
     log('→ 尝试 ' + label)
     try { location.href = url }
     catch (e) { log('✗ 抛异常：' + (e && e.message ? e.message : String(e))) }
   }
+  $('goScheme').addEventListener('click', function(){ jump(S.scheme, '裸 scheme（手动）') })
+  $('goHttps').addEventListener('click',  function(){ jump(S.https,  'https 包装（手动）') })
 
   function settle(){
     $('spinner').hidden = true
-    if (left) {
+    if (S.left) {
       $('title').textContent = '已唤起小程序'
       $('subtitle').textContent = '如果没看到小程序，说明是唤起后又被退回'
       $('verdict').innerHTML = '<span class="tag ok">✓ 页面切到后台 —— 跳转成功</span>'
@@ -179,18 +209,8 @@
       $('fallback').hidden = false
     }
   }
-
-  $('goScheme').addEventListener('click', function(){ jump(schemeUrl, '裸 scheme（手动）') })
-  $('goHttps').addEventListener('click',  function(){ jump(httpsUrl,  'https 包装（手动）') })
-
-  log('环境：' + envName)
-  log('自动跳转方式：' + primaryLabel)
-
-  // 留一点时间让首屏画出来，再自动跳
-  setTimeout(function(){
-    jump(primaryUrl, primaryLabel + '（自动）')
-    setTimeout(settle, 2500)
-  }, 400)
+  // 从 head 发起那一刻起算 2.5s
+  setTimeout(settle, Math.max(300, 2500 - (Date.now() - S.t0)))
 })()
 </script>
 </body>
